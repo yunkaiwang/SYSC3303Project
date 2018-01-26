@@ -2,14 +2,14 @@ package project;
 
 import java.util.Scanner;
 
-public class TFTPClient {
+public class TFTPServer {
 	private Mode currentMode;
 
-	TFTPClient() {
+	TFTPServer() {
 		// default mode is quite
 		this.currentMode = Mode.QUITE;
 	}
-
+	
 	private static void printMenu() {
 		System.out.println("Available commands:");
 		System.out.println("1. help - show the menu");
@@ -41,7 +41,7 @@ public class TFTPClient {
 				printMenu();
 				continue;
 			case "stop":
-				System.out.println("Stopping client...Good bye!");
+				System.out.println("Stopping server...Good bye!");
 				s.close();
 				return;
 			case "switch":
@@ -55,7 +55,7 @@ public class TFTPClient {
 	}
 
 	public static void main(String[] args) {
-		TFTPClient client = new TFTPClient();
-		client.waitForCommand();
+		TFTPServer server = new TFTPServer();
+		server.waitForCommand();
 	}
 }
