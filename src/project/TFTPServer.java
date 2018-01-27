@@ -3,7 +3,8 @@ package project;
 import java.util.Scanner;
 
 public class TFTPServer {
-	private Mode currentMode;
+	private Mode currentMode; // verbose or quite
+	private int numThread; // number of threads
 
 	TFTPServer() {
 		// default mode is quite
@@ -18,6 +19,37 @@ public class TFTPServer {
 		System.out.println();
 	}
 
+	synchronized public void incrementNumThread() {
+		++numThread;
+	}
+
+	synchronized public void decrementNumThread() {
+		--numThread;
+		if (numThread <= 0) {
+			notifyAll();
+		}
+	}
+
+	synchronized public int getNumThread() {
+		return numThread;
+	}
+	
+	private void stopServer() {
+		//this function should wait for all threads to response, and not accept any new requests
+		System.out.println("Waiting for all threads to finish...");
+		while (getNumThread() > 0) {
+			try {
+				wait();
+			} catch (InterruptedException e) {
+				System.out.println("Stoping process is interrupted, failed to stop server.");
+				System.exit(-1);
+			}
+		}
+
+		System.out.println("Stopping server...Good bye!");
+		System.exit(0);
+	}
+	
 	private void switchMode() {
 		switch(this.currentMode) {
 		case QUITE:
@@ -41,15 +73,16 @@ public class TFTPServer {
 				printMenu();
 				continue;
 			case "stop":
-				System.out.println("Stopping server...Good bye!");
 				s.close();
-				return;
+				this.stopServer();
 			case "switch":
 				this.switchMode();
 				System.out.println("The mode has been switched to " + this.currentMode + "\n");
 				continue;
 			default:
 				System.out.println("Invalid command, please try again!\n");
+				System.out.println("These are the available commands:");
+				printMenu();
 			}
 		}
 	}
