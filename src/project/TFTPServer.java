@@ -3,12 +3,17 @@ package project;
 import java.util.Scanner;
 
 public class TFTPServer {
+	// the port that the server will listen for request on
+	private static final int TFTP_LISTEN_PORT = 69;
 	private Mode currentMode; // verbose or quite
 	private int numThread; // number of threads
+	private TFTPRequestListener requestListener;
 
 	TFTPServer() {
 		// default mode is quite
 		this.currentMode = Mode.QUITE;
+		this.requestListener = new TFTPRequestListener(this, TFTP_LISTEN_PORT);
+		this.requestListener.start();
 	}
 	
 	private static void printMenu() {
@@ -25,7 +30,7 @@ public class TFTPServer {
 
 	synchronized public void decrementNumThread() {
 		--numThread;
-		if (numThread <= 0) {
+		if (numThread <= 0) { // an error happened
 			notifyAll();
 		}
 	}
@@ -35,7 +40,9 @@ public class TFTPServer {
 	}
 	
 	private void stopServer() {
-		//this function should wait for all threads to response, and not accept any new requests
+		// inform the request listener to refuse any new connection, and wait for all
+		// exist threads to finish
+		requestListener.refuseNewConnection();
 		System.out.println("Waiting for all threads to finish...");
 		while (getNumThread() > 0) {
 			try {
