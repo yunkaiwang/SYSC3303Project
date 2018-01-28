@@ -52,7 +52,7 @@ public class TFTPClient {
 		byte[] msg = new byte[] {1, 1, 1, 1};
 
 		try {
-			sendPacket = new DatagramPacket(msg, msg.length, InetAddress.getLocalHost(), 69);
+			sendPacket = new DatagramPacket(msg, msg.length, InetAddress.getLocalHost(), 6900);
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 			System.exit(1);
