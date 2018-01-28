@@ -48,8 +48,8 @@ public class TFTPServer {
 			try {
 				wait();
 			} catch (InterruptedException e) {
-				System.out.println("Stoping process is interrupted, failed to stop server.");
-				System.exit(-1);
+				System.out.println("Stoping process is interrupted, failed to stop server properly.");
+				System.exit(1);
 			}
 		}
 

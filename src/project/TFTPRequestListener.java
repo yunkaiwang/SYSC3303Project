@@ -1,6 +1,8 @@
 package project;
 
+import java.io.IOException;
 import java.net.DatagramSocket;
+import java.net.DatagramPacket;
 import java.net.SocketException;
 
 public class TFTPRequestListener extends Thread {
@@ -35,8 +37,24 @@ public class TFTPRequestListener extends Thread {
 		}
 		
 		while (acceptNewConnection) { // keep waiting for new connection
-			
+			byte msg[] = new byte[512];
+			// create new packet for receiving new requests
+			DatagramPacket packet = new DatagramPacket(msg, msg.length);
+			try {
+				socket.receive(packet);
+			} catch(IOException e) {
+				// IOException raised when the socket is closed while waiting
+				// for new requests, which means new requests is received after
+				// the server has told the request listener to stop listen to
+				// new requests, so we should ignore handling this exception
+				// since the server is stopped by the server operator, so it
+				// should be safe to just ignore this exception
+				continue;
+			}
 		}
+		
+		socket.disconnect(); // close the socket
+		server.decrementNumThread(); // decrease the thread count in server
 	}
 	
 }
