@@ -1,9 +1,10 @@
 package project;
 
-import java.io.*;
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Scanner;
 
@@ -41,12 +42,17 @@ public class TFTPClient {
 	}
 	
 	public void send() {
-		// message to send
-		byte[] msg = new byte[100];
-
-		// create the packet that will be sent to the intermediate
 		try {
-			sendPacket = new DatagramPacket(msg, msg.length, InetAddress.getLocalHost(), 23);
+			sendReceiveSocket = new DatagramSocket();
+		} catch (SocketException se) { // Can't create the socket.
+			se.printStackTrace();
+			System.exit(1);
+		}
+		// message to send
+		byte[] msg = new byte[] {1, 1, 1, 1};
+
+		try {
+			sendPacket = new DatagramPacket(msg, msg.length, InetAddress.getLocalHost(), 69);
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 			System.exit(1);
@@ -89,6 +95,7 @@ public class TFTPClient {
 		System.out.println("1. help - show the menu");
 		System.out.println("2. stop - stop the client");
 		System.out.println("3. switch - switch mode(verbose or quite)");
+		System.out.println("4. send - send new request(just for testing)");
 		System.out.println();
 	}
 
@@ -121,6 +128,9 @@ public class TFTPClient {
 			case "switch":
 				this.switchMode();
 				System.out.println("The mode has been switched to " + this.currentMode + "\n");
+				continue;
+			case "send":
+				send();
 				continue;
 			default:
 				System.out.println("Invalid command, please try again!\n");

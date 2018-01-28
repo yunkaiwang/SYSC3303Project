@@ -1,5 +1,7 @@
 package project;
 
+import java.net.DatagramPacket;
+import java.net.InetAddress;
 import java.util.Scanner;
 
 public class TFTPServer {
@@ -15,14 +17,6 @@ public class TFTPServer {
 		this.requestListener = new TFTPRequestListener(this, TFTP_LISTEN_PORT);
 		this.requestListener.start();
 	}
-	
-	private static void printMenu() {
-		System.out.println("Available commands:");
-		System.out.println("1. help - show the menu");
-		System.out.println("2. stop - stop the client");
-		System.out.println("3. switch - switch mode");
-		System.out.println();
-	}
 
 	synchronized public void incrementNumThread() {
 		++numThread;
@@ -37,6 +31,22 @@ public class TFTPServer {
 
 	synchronized public int getNumThread() {
 		return numThread;
+	}
+	
+	public TFTPRequestHandler createNewRequestHandler(DatagramPacket packet, InetAddress address, int port) {
+		return new TFTPRequestHandler(this, packet, address, port);
+	}
+	
+	public Mode getMode() { // return current mode
+		return currentMode;
+	}
+	
+	private static void printMenu() {
+		System.out.println("Available commands:");
+		System.out.println("1. help - show the menu");
+		System.out.println("2. stop - stop the client");
+		System.out.println("3. switch - switch mode");
+		System.out.println();
 	}
 	
 	private void stopServer() {

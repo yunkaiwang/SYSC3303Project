@@ -28,7 +28,7 @@ public class TFTPRequestListener extends Thread {
 	@Override
 	public void run() {
 		server.incrementNumThread(); // request listen is one thread of the server
-		
+		System.out.println("I'm waiting for new requests");
 		try {
 			socket = new DatagramSocket(port);
 		} catch (SocketException se) { // failed to bound the port
@@ -42,6 +42,9 @@ public class TFTPRequestListener extends Thread {
 			DatagramPacket packet = new DatagramPacket(msg, msg.length);
 			try {
 				socket.receive(packet);
+				System.out.println("received new request");
+				server.createNewRequestHandler(packet, packet.getAddress(), packet.getPort()).start();
+
 			} catch(IOException e) {
 				// IOException raised when the socket is closed while waiting
 				// for new requests, which means new requests is received after
