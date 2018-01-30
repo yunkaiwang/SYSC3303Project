@@ -7,12 +7,15 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Scanner;
+import java.io.*;
 
 public class TFTPClient {
 	DatagramPacket sendPacket, receivePacket;
 	DatagramSocket sendReceiveSocket;
 	private Mode currentMode; // verbose or quite
-
+	private String folder = System.getProperty("user.dir") + "/client_files/";
+	public static final int MAX_FILE_DATA_LENGTH = 1024;
+	
 	TFTPClient() {
 		// default mode is quite
 		this.currentMode = Mode.QUITE;
@@ -23,16 +26,12 @@ public class TFTPClient {
 		case QUITE:
 			return;
 		case VERBOSE:
-			/* 
-			 * need to add more printing statements
-			 * - packet type(RRQ, WRQ, etc.)
-			 * - filename(if applicable)
-			 * - mode(if applicable)
-			 * - block number(if applicable)
-			 * - number of bytes if data(if applicable)
-			 * - error code(if applicable)
-			 * - error message(if applicable)
-			*/ 
+			/*
+			 * need to add more printing statements - packet type(RRQ, WRQ, etc.) -
+			 * filename(if applicable) - mode(if applicable) - block number(if applicable) -
+			 * number of bytes if data(if applicable) - error code(if applicable) - error
+			 * message(if applicable)
+			 */
 			System.out.println("Host: " + packet.getAddress());
 			System.out.println("Port: " + packet.getPort());
 			System.out.println("Length: " + packet.getLength());
@@ -40,7 +39,7 @@ public class TFTPClient {
 			return;
 		}
 	}
-	
+
 	public void send() {
 		try {
 			sendReceiveSocket = new DatagramSocket();
@@ -49,7 +48,7 @@ public class TFTPClient {
 			System.exit(1);
 		}
 		// message to send
-		byte[] msg = new byte[] {1, 1, 1, 1};
+		byte[] msg = new byte[] { 1, 1, 1, 1 };
 
 		try {
 			sendPacket = new DatagramPacket(msg, msg.length, InetAddress.getLocalHost(), 6900);
@@ -136,6 +135,59 @@ public class TFTPClient {
 				System.out.println("Invalid command, please try again!\n");
 			}
 		}
+	}
+
+	public String getFolder() {
+		return folder;
+	}
+
+	public void getFile(String filename) {
+		String path = getFolder() + filename;
+		File file = new File(path);
+
+		try {
+			byte[] data = new byte[MAX_FILE_DATA_LENGTH];
+			int byteCount = 0;
+			int byteUsed = 0;
+			FileInputStream fileStream = new FileInputStream(file);
+
+			while(byteCount < MAX_FILE_DATA_LENGTH) {
+				byteUsed++;
+				byteCount = fileStream.read(data);
+				if (byteCount == -1) {
+					byteCount = 0;
+					data = new byte[0];
+				}
+				byte[] dataToBeSent = generateFileData(byteUsed, data, byteCount);
+				prepareDatagramPacket(dataToBeSent);
+			}
+			
+			fileStream.close();
+		} catch (FileNotFoundException e) {
+			System.out.println("File does not exist.");
+			System.out.println("Please choose another file.");
+		} catch (IOException e) {
+			System.out.println("IOException" + e);
+		}
+	}
+	
+	public byte[] generateFileData(int byteUsed, byte[] data, int dataLength) throws IOException{
+		ByteArrayOutputStream stream = new ByteArrayOutputStream();
+		stream.write(0);
+		stream.write(2);
+		stream.write(data);
+		return stream.toByteArray();
+	}
+
+	public DatagramPacket prepareDatagramPacket(byte[] data) {
+		try {
+			DatagramPacket packet = new DatagramPacket(data, data.length,  InetAddress.getLocalHost(), 6900);
+			return packet;
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+			return null;
+		}
+		
 	}
 
 	public static void main(String[] args) {
