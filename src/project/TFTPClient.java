@@ -9,6 +9,7 @@ import java.net.UnknownHostException;
 import java.util.Scanner;
 
 public class TFTPClient {
+	private static final int default_port = 69;
 	DatagramPacket sendPacket, receivePacket;
 	DatagramSocket sendReceiveSocket;
 	private Mode currentMode; // verbose or quite
@@ -52,7 +53,7 @@ public class TFTPClient {
 		byte[] msg = new byte[] {1, 1, 1, 1};
 
 		try {
-			sendPacket = new DatagramPacket(msg, msg.length, InetAddress.getLocalHost(), 69);
+			sendPacket = new DatagramPacket(msg, msg.length, InetAddress.getLocalHost(), default_port);
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 			System.exit(1);
