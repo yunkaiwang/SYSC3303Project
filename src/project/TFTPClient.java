@@ -152,13 +152,13 @@ public class TFTPClient {
 				if (commands.length != 2)
 					System.out.println("Invalid request! Please enter a valid filename for " +
 							           "read request(e.g. read text.txt)\n");
-				
+				readFile(commands[1]);
 				continue;
 			case "write":
 				if (commands.length != 2)
 					System.out.println("Invalid request! Please enter a valid filename for " + 
 				                       "write request(e.g. write text.txt)\n");
-				
+				writeFile(commands[1]);
 				continue;
 			default:
 				System.out.println("Invalid command, please try again!\n");
@@ -166,6 +166,14 @@ public class TFTPClient {
 		}
 	}
 
+	public void readFile(String filename) {
+		
+	}
+	
+	public void writeFile(String filename) {
+		
+	}
+	
 	public String getFolder() {
 		return folder;
 	}

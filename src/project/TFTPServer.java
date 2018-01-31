@@ -6,7 +6,7 @@ import java.util.Scanner;
 
 public class TFTPServer {
 	// the port that the server will listen for request on
-	private static final int TFTP_LISTEN_PORT = 6900;
+	private static final int TFTP_LISTEN_PORT = 69;
 	private Mode currentMode; // verbose or quite
 	private int numThread; // number of threads
 	private TFTPRequestListener requestListener;
