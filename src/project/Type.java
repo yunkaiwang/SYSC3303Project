@@ -15,10 +15,21 @@ public enum Type {
 		this.OPCODE = OPCODE;
 	}
 	
+	/**
+	 * Convert the OPCODE into byte array of length 2
+	 * 
+	 * @return byte array which contains the OPCODE
+	 */
 	public byte[] OPCODE() {
 		return ByteBuffer.allocate(2).putInt(OPCODE).array();
 	}
 	
+	/**
+	 * Check if the given OPCODE is valid by checking if the OPCODE match
+	 * the OPCODE standard(1 for RRQ, 2 for WRQ, etc.)
+	 * 
+	 * @return true if the OPCODE matches the standard, false otherwise
+	 */
 	public static boolean validOPCODE(Type t, int OPCODE) {
 		return OPCODE == t.OPCODE;
 	}
