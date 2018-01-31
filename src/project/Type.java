@@ -5,8 +5,8 @@ import java.nio.ByteBuffer;
 public enum Type {
 	RRQ(1),
 	WRQ(2),
-	ACK(3),
-	DATA(4),
+	DATA(3),
+	ACK(4),
 	ERROR(5);
 	
 	private int OPCODE;
