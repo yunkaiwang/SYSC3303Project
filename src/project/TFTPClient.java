@@ -14,12 +14,21 @@ public class TFTPClient {
 	DatagramPacket sendPacket, receivePacket;
 	DatagramSocket sendReceiveSocket;
 	private Mode currentMode; // verbose or quite
+	private InetAddress serverAddress;
+	private int serverPort;
+
 	private String folder = System.getProperty("user.dir") + "/client_files/";
-	public static final int MAX_FILE_DATA_LENGTH = 1024;
+	public static final int MAX_FILE_DATA_LENGTH = 512;
 	
-	TFTPClient() {
+	TFTPClient() throws UnknownHostException {
+		this(InetAddress.getLocalHost(), default_port);
+	}
+
+	TFTPClient(InetAddress server, int port) {
 		// default mode is quite
 		this.currentMode = Mode.QUITE;
+		this.serverAddress = server;
+		this.serverPort = port;
 	}
 
 	private void printInformation(DatagramPacket packet) {
@@ -95,7 +104,8 @@ public class TFTPClient {
 		System.out.println("1. help - show the menu");
 		System.out.println("2. stop - stop the client");
 		System.out.println("3. switch - switch mode(verbose or quite)");
-		System.out.println("4. send - send new request(just for testing)");
+		System.out.println("4. read <filename> - send RRQ");
+		System.out.println("5. write <filename> - send WRQ");
 		System.out.println();
 	}
 
@@ -116,13 +126,19 @@ public class TFTPClient {
 		printMenu();
 		while (true) {
 			System.out.print("Command: ");
-			String cmdLine = s.nextLine().toLowerCase();
-			switch (cmdLine) {
+			String cmdLine = s.nextLine().toLowerCase(); // convert all command into lower case
+			String[] commands = cmdLine.split("\\s+");
+			if (commands.length == 0) {
+				System.out.println("Invalid command, please try again!\n");
+				continue;
+			}
+			
+			switch (commands[0]) {
 			case "help":
 				printMenu();
 				continue;
 			case "stop":
-				System.out.println("Stopping client...Good bye!");
+				System.out.println("Terminating client.");
 				s.close();
 				return;
 			case "switch":
@@ -131,6 +147,18 @@ public class TFTPClient {
 				continue;
 			case "send":
 				send();
+				continue;
+			case "read":
+				if (commands.length != 2)
+					System.out.println("Invalid request! Please enter a valid filename for " +
+							           "read request(e.g. read text.txt)\n");
+				
+				continue;
+			case "write":
+				if (commands.length != 2)
+					System.out.println("Invalid request! Please enter a valid filename for " + 
+				                       "write request(e.g. write text.txt)\n");
+				
 				continue;
 			default:
 				System.out.println("Invalid command, please try again!\n");
@@ -191,7 +219,7 @@ public class TFTPClient {
 		
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws UnknownHostException {
 		TFTPClient client = new TFTPClient();
 		client.waitForCommand();
 	}
