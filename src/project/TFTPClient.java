@@ -14,10 +14,7 @@ public class TFTPClient {
 	private Mode currentMode; // verbose or quite
 	private InetAddress serverAddress;
 	private int serverPort;
-
 	private String folder = System.getProperty("user.dir") + "/client_files/";
-	public static final int MAX_FILE_DATA_LENGTH = 512;
-	public static final int ACK_LENGTH = 4;
 
 	TFTPClient() throws UnknownHostException {
 		this(InetAddress.getLocalHost(), default_port);
@@ -228,7 +225,7 @@ public class TFTPClient {
 			TFTPRequestPacket WRQPacket = TFTPRequestPacket.createWriteRequest(filename);
 			sendRequest(WRQPacket);
 			
-			byte[] data = new byte[MAX_FILE_DATA_LENGTH];
+			byte[] data = new byte[TFTPDataPacket.MAX_LENGTH];
 			int byteUsed = 0;
 			TFTPAckPacket AckPacket;
 			int blockNumber = 0;
