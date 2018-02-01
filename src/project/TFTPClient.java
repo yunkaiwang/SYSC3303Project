@@ -1,6 +1,5 @@
 package project;
 
-import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -11,15 +10,12 @@ import java.io.*;
 
 public class TFTPClient {
 	private static final int default_port = 69;
-	DatagramPacket sendPacket, receivePacket;
-	DatagramSocket sendReceiveSocket;
+	DatagramSocket socket;
 	private Mode currentMode; // verbose or quite
 	private InetAddress serverAddress;
 	private int serverPort;
-
 	private String folder = System.getProperty("user.dir") + "/client_files/";
-	public static final int MAX_FILE_DATA_LENGTH = 512;
-	
+
 	TFTPClient() throws UnknownHostException {
 		this(InetAddress.getLocalHost(), default_port);
 	}
@@ -50,74 +46,27 @@ public class TFTPClient {
 		}
 	}
 
-	public void send() {
-		try {
-			sendReceiveSocket = new DatagramSocket();
-		} catch (SocketException se) { // Can't create the socket.
-			se.printStackTrace();
-			System.exit(1);
-		}
-		// message to send
-		byte[] msg = new byte[] { 1, 1, 1, 1 };
-
-		try {
-			sendPacket = new DatagramPacket(msg, msg.length, InetAddress.getLocalHost(), default_port);
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-
-		// print the information that will be sent
-		System.out.println("Client: Sending packet:");
-		this.printInformation(sendPacket);
-
-		// send the packet to intermediate
-		try {
-			sendReceiveSocket.send(sendPacket);
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-
-		System.out.println("Client: Packet sent.\n");
-
-		// start to receive
-		byte data[] = new byte[100];
-		receivePacket = new DatagramPacket(data, data.length);
-
-		// block until receive a response
-		try {
-			System.out.println("Client: I'm waiting...");
-			sendReceiveSocket.receive(receivePacket);
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-
-		// print the information received
-		System.out.println("Client: Packet received:");
-		this.printInformation(receivePacket);
-	}
-
 	private static void printMenu() {
 		System.out.println("Available commands:");
-		System.out.println("1. help - show the menu");
-		System.out.println("2. stop - stop the client");
-		System.out.println("3. switch - switch mode(verbose or quite)");
-		System.out.println("4. read <filename> - send RRQ");
-		System.out.println("5. write <filename> - send WRQ");
-		System.out.println();
+		System.out.println("1. menu - show the menu");
+		System.out.println("2. exit - stop the client");
+		System.out.println("3. mode - show current mode");
+		System.out.println("4. switch - switch print mode(verbose or quite)");
+		System.out.println("5. read <filename> - send RRQ(i.e. read text.txt)");
+		System.out.println("6. write <filename> - send WRQ(i.e. write text.txt)\n");
+	}
+
+	private void printMode() {
+		System.out.println("Current mode is: " + currentMode.mode());
 	}
 
 	private void switchMode() {
-		switch (this.currentMode) {
-		case QUITE:
-			this.currentMode = Mode.VERBOSE;
-			return;
-		case VERBOSE:
-			this.currentMode = Mode.QUITE;
-			return;
-		}
+		this.currentMode = currentMode.switchMode();
+		System.out.println("The mode has been switched to " + this.currentMode + "\n");
+	}
+
+	private void stopClient() {
+		System.out.println("Terminating client.");
 	}
 
 	private void waitForCommand() {
@@ -127,38 +76,37 @@ public class TFTPClient {
 		while (true) {
 			System.out.print("Command: ");
 			String cmdLine = s.nextLine().toLowerCase(); // convert all command into lower case
-			String[] commands = cmdLine.split("\\s+");
+			String[] commands = cmdLine.split("\\s+"); // split all command into array of command
 			if (commands.length == 0) {
 				System.out.println("Invalid command, please try again!\n");
 				continue;
 			}
-			
+
 			switch (commands[0]) {
-			case "help":
+			case "menu":
 				printMenu();
 				continue;
-			case "stop":
-				System.out.println("Terminating client.");
-				s.close();
+			case "exit":
+				s.close(); // close the scanner
+				stopClient();
 				return;
-			case "switch":
-				this.switchMode();
-				System.out.println("The mode has been switched to " + this.currentMode + "\n");
+			case "mode":
+				printMode();
 				continue;
-			case "send":
-				send();
+			case "switch":
+				switchMode();
 				continue;
 			case "read":
 				if (commands.length != 2)
-					System.out.println("Invalid request! Please enter a valid filename for " +
-							           "read request(e.g. read text.txt)\n");
-				readFile(commands[1]);
+					System.out.println("Invalid request! Please enter a valid filename for "
+							+ "read request(e.g. read text.txt)\n");
+				readFileFromServer(commands[1]);
 				continue;
 			case "write":
 				if (commands.length != 2)
-					System.out.println("Invalid request! Please enter a valid filename for " + 
-				                       "write request(e.g. write text.txt)\n");
-				writeFile(commands[1]);
+					System.out.println("Invalid request! Please enter a valid filename for "
+							+ "write request(e.g. write text.txt)\n");
+				writeFileToServer(commands[1]);
 				continue;
 			default:
 				System.out.println("Invalid command, please try again!\n");
@@ -166,65 +114,139 @@ public class TFTPClient {
 		}
 	}
 
-	public void readFile(String filename) {
-		
+	private boolean createConnection() {
+		try {
+			socket = new DatagramSocket();
+			return true;
+		} catch (SocketException e) {
+			return false;
+		}
 	}
 	
-	public void writeFile(String filename) {
-		
-	}
-	
-	public String getFolder() {
+	private String getFolder() {
 		return folder;
 	}
-
-	public void getFile(String filename) {
-		String path = getFolder() + filename;
-		File file = new File(path);
-
+	
+	private String getFilePath(String filename) {
+		return getFolder() + filename;
+	}
+	
+	private void sendRequest(TFTPRequestPacket packet) throws IOException {
+		socket.send(packet.createDatagram(serverAddress, serverPort));
+	}
+	
+	private void sendRequest(TFTPAckPacket packet) throws IOException {
+		socket.send(packet.createDatagram(serverAddress, serverPort));
+	}
+	
+	private void sendRequest(TFTPDataPacket packet) throws IOException {
+		socket.send(packet.createDatagram(serverAddress, serverPort));
+	}
+	
+	private TFTPDataPacket receiveDataPacket(int blockNumber) {
 		try {
-			byte[] data = new byte[MAX_FILE_DATA_LENGTH];
-			int byteCount = 0;
-			int byteUsed = 0;
-			FileInputStream fileStream = new FileInputStream(file);
-
-			while(byteCount < MAX_FILE_DATA_LENGTH) {
-				byteUsed++;
-				byteCount = fileStream.read(data);
-				if (byteCount == -1) {
-					byteCount = 0;
-					data = new byte[0];
-				}
-				byte[] dataToBeSent = generateFileData(byteUsed, data, byteCount);
-				prepareDatagramPacket(dataToBeSent);
-			}
-			
-			fileStream.close();
-		} catch (FileNotFoundException e) {
-			System.out.println("File does not exist.");
-			System.out.println("Please choose another file.");
+			DatagramPacket receivePacket = new DatagramPacket(new byte[TFTPDataPacket.MAX_LENGTH], TFTPDataPacket.MAX_LENGTH);
+			socket.receive(receivePacket);
+			return TFTPDataPacket.createFromPacket(receivePacket);
 		} catch (IOException e) {
-			System.out.println("IOException" + e);
+			System.out.println("Client failed to receive the response. Please try again.\n");
+			return null;
 		}
 	}
 	
-	public byte[] generateFileData(int byteUsed, byte[] data, int dataLength) throws IOException{
-		ByteArrayOutputStream stream = new ByteArrayOutputStream();
-		stream.write(0);
-		stream.write(2);
-		stream.write(data);
-		return stream.toByteArray();
-	}
-
-	public DatagramPacket prepareDatagramPacket(byte[] data) {
+	private TFTPAckPacket receiveAckPacket(int blockNumber) {
 		try {
-			DatagramPacket packet = new DatagramPacket(data, data.length,  InetAddress.getLocalHost(), 6900);
-			return packet;
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
+			DatagramPacket receivePacket = new DatagramPacket(new byte[TFTPAckPacket.PACKET_LENGTH], TFTPAckPacket.PACKET_LENGTH);
+			socket.receive(receivePacket);
+			return TFTPAckPacket.createFromPacket(receivePacket);
+		} catch (IOException e) {
+			System.out.println("Client failed to receive the response. Please try again.\n");
 			return null;
 		}
-		
+	}
+
+	public void readFileFromServer(String filename) { // RRQ
+		String filePath = getFilePath(filename);
+		File file = null;
+		try {
+			file = new File(filePath);
+			if (file.exists() || !file.canWrite()) {
+				System.out.println("Client don't have permission to write " + filename + ". Please try again.\n");
+				return;
+			}
+
+			FileOutputStream fs = new FileOutputStream(filePath);
+			if (!createConnection()) { // socket create failed
+				System.out.println("Client failed to create the socket, please check your network status and try again.\n");
+				fs.close();
+				return;
+			}
+			
+			TFTPRequestPacket RRQPacket = TFTPRequestPacket.createReadRequest(filename);
+			sendRequest(RRQPacket);
+			
+			TFTPDataPacket DATAPacket;
+			int blockNumber = 1;
+			do {
+				DATAPacket = receiveDataPacket(blockNumber);
+				fs.write(DATAPacket.getFileData());
+				sendRequest(new TFTPAckPacket(blockNumber));
+				++blockNumber;
+			} while (!DATAPacket.isLastDataPacket());
+			fs.close();
+		} catch (FileNotFoundException e) {
+			file.delete();
+			System.out.println("Client failed to write " + filename + ". Please try again.\n");
+			return;
+		} catch (IOException e) {
+			file.delete();
+			System.out.println("Client failed to send the request. Please try again.\n");
+			return;
+		}
+	}
+
+	public void writeFileToServer(String filename) { // WRQ
+		String filePath = getFilePath(filename);
+		File file = null;
+		try {
+			file = new File(filePath);
+			if (!file.exists() || !file.canRead()) {
+				System.out.println("Client don't have permission to read " + filename + ". Please try again.\n");
+				return;
+			}
+
+			FileInputStream fs = new FileInputStream(filePath);
+			if (!createConnection()) { // socket create failed
+				System.out.println("Client failed to create the socket, please check your network status and try again.\n");
+				fs.close();
+				return;
+			}
+			
+			TFTPRequestPacket WRQPacket = TFTPRequestPacket.createWriteRequest(filename);
+			sendRequest(WRQPacket);
+			
+			byte[] data = new byte[TFTPDataPacket.MAX_LENGTH];
+			int byteUsed = 0;
+			TFTPAckPacket AckPacket;
+			int blockNumber = 0;
+			
+			do {
+				AckPacket = receiveAckPacket(blockNumber++);
+				byteUsed = fs.read(data);
+				if (byteUsed == -1) {
+					byteUsed = 0;
+					data = new byte[0];
+				}
+				sendRequest(new TFTPDataPacket(blockNumber, data, byteUsed));
+			} while (byteUsed ==  TFTPDataPacket.MAX_DATA_LENGTH);
+			fs.close();
+		} catch (FileNotFoundException e) {
+			System.out.println("Client failed to read " + filename + ". Please try again.\n");
+			return;
+		} catch (IOException e) {
+			System.out.println("Client failed to send the request. Please try again.\n");
+			return;
+		}
 	}
 
 	public static void main(String[] args) throws UnknownHostException {

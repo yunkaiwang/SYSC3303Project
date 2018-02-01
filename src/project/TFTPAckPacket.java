@@ -2,11 +2,13 @@ package project;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 
-public class TFTPACKPacket {
+public class TFTPAckPacket {
 	private static final Type type = Type.ACK; // type will always be ack
-	private static final int PACKET_LENGTH = 4; // header length
+	public static final int PACKET_LENGTH = 4; // header length
 	private static final int BLOCK_LENGTH = 4; // maximum block number(4)
 	private int blockNumber; // block number of the packet
 
@@ -16,7 +18,7 @@ public class TFTPACKPacket {
 	 * @param blockNumber
 	 *            - the block number of the packet
 	 */
-	TFTPACKPacket(int blockNumber) {
+	TFTPAckPacket(int blockNumber) {
 		if (!validBlockNumber(blockNumber))
 			throw new IllegalArgumentException("Invalid block number");
 		
@@ -58,6 +60,10 @@ public class TFTPACKPacket {
 	}
 	
 
+	public static TFTPAckPacket createFromPacket(DatagramPacket packet) {
+		return createFromPacketData(packet.getData(), packet.getLength());
+	}
+	
 	/**
 	 * Generate the packet data
 	 * 
@@ -65,7 +71,7 @@ public class TFTPACKPacket {
 	 * @param packetLength
 	 * @return the byte array of the packet
 	 */
-	public static TFTPACKPacket createFromPacketData(byte[] packetData, int packetDataLength) {
+	public static TFTPAckPacket createFromPacketData(byte[] packetData, int packetDataLength) {
 		// check if the data length is correct
 		if (!validPacketData(packetData, packetDataLength)) {
 			throw new IllegalArgumentException("Invalid packet data");
@@ -77,7 +83,7 @@ public class TFTPACKPacket {
 		}
 
 		int BlockNumber = ByteBuffer.wrap(packetData, 2, 2).getInt();
-		return new TFTPACKPacket(BlockNumber);
+		return new TFTPAckPacket(BlockNumber);
 	}
 
 	/**
@@ -89,8 +95,11 @@ public class TFTPACKPacket {
 		ByteArrayOutputStream stream = new ByteArrayOutputStream();
 		stream.write(type.OPCODE());
 		stream.write(blockNumber());
-
 		return stream.toByteArray();
 	}
 
+	public DatagramPacket createDatagram(InetAddress serverAddress, int serverPort) throws IOException {
+		byte[] data = generateData();
+		return new DatagramPacket(data, data.length, serverAddress, serverPort);
+	}
 }

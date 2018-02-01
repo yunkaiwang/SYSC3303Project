@@ -2,13 +2,15 @@ package project;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 
 public class TFTPDataPacket {
 	private static final Type type = Type.DATA; // type will always be data
-	private static final int MAX_LENGTH = 516; // max packet data length
+	public static final int MAX_LENGTH = 516; // max packet data length
 	private static final int HEADER_LENGTH = 4; // header length
-	private static final int MAX_DATA_LENGTH = 512; // max data length
+	public static final int MAX_DATA_LENGTH = 512; // max data length
 	private static final int MIN_BLOCK_NUMBER = 0; // minimum block number(0)
 	private static final int MAX_BLOCK_NUMBER = 0xffff; // maximum block number(65535)
 	private int blockNumber; // block number of the packet
@@ -54,6 +56,10 @@ public class TFTPDataPacket {
 			this.fileData = new byte[fileDataLength];
 			System.arraycopy(fileData, 0, this.fileData, 0, fileDataLength);
 		}
+	}
+	
+	public static TFTPDataPacket createFromPacket(DatagramPacket packet) {
+		return createFromPacketData(packet.getData(), packet.getLength());
 	}
 	
 	public static TFTPDataPacket createFromPacketData(byte[] packetData, int packetDataLength) {
@@ -122,7 +128,7 @@ public class TFTPDataPacket {
 	 * @return true if the packet is the last packet, false otherwise
 	 */
 	public boolean isLastDataPacket() {
-		return this.fileData.length < MAX_BLOCK_NUMBER;
+		return this.fileData != null && this.fileData.length < MAX_BLOCK_NUMBER;
 	}
 	
 	/**
@@ -145,6 +151,11 @@ public class TFTPDataPacket {
 		steam.write(blockNumber());
 		steam.write(fileData, 0, fileData.length);
 		return steam.toByteArray();
+	}
+
+	public DatagramPacket createDatagram(InetAddress serverAddress, int serverPort) throws IOException {
+		byte[] data = generateData();
+		return new DatagramPacket(data, data.length, serverAddress, serverPort);
 	}
 	
 }
