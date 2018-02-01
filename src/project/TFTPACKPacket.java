@@ -8,8 +8,6 @@ public class TFTPACKPacket {
 	private static final Type type = Type.ACK; // type will always be ack
 	private static final int PACKET_LENGTH = 4; // header length
 	private static final int BLOCK_LENGTH = 4; // maximum block number(4)
-	// private static final int MAX_BLOCK_NUMBER = 0xffff; // maximum block number(4)
-	// private static final int MIN_BLOCK_NUMBER = 0; // minimum block number(0)
 	private int blockNumber; // block number of the packet
 
 	/**
