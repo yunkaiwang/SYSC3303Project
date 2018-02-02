@@ -7,7 +7,7 @@ import java.util.Scanner;
 
 public class TFTPServer {
 	// the port that the server will listen for request on
-	private static final int TFTP_LISTEN_PORT = 69;
+	public static final int TFTP_LISTEN_PORT = 69;
 	public static final int MAX_LENGTH = 516; // maximum packet length
 	public static final int MIN_LENGTH = 4;
 	private Mode currentMode; // verbose or quite
@@ -51,6 +51,7 @@ public class TFTPServer {
 		System.out.println("2. exit - stop the client");
 		System.out.println("3. mode - show current mode");
 		System.out.println("4. switch - switch mode");
+		System.out.println("5. count - number of threads that are running");
 		System.out.println();
 	}
 	
@@ -60,12 +61,7 @@ public class TFTPServer {
 		requestListener.stopRequestListener();
 		System.out.println("Waiting for all threads to finish...");
 		while (getNumThread() > 0) {
-			try {
-				wait();
-			} catch (InterruptedException e) {
-				System.out.println("Stoping process is interrupted, failed to stop server properly.");
-				System.exit(1);
-			}
+			continue;
 		}
 
 		System.out.println("Terminating server.");
@@ -78,6 +74,10 @@ public class TFTPServer {
 	
 	private void printMode() {
 		System.out.println("Current mode is: " + currentMode.mode());
+	}
+	
+	private void printCount() {
+		System.out.println("Current number of threads is: " + getNumThread());
 	}
 	
 	private String getFolder() {
@@ -109,6 +109,9 @@ public class TFTPServer {
 			case "switch":
 				this.switchMode();
 				System.out.println("The mode has been switched to " + this.currentMode + "\n");
+				continue;
+			case "count":
+				this.printCount();
 				continue;
 			default:
 				System.out.println("Invalid command, please try again!\n");
