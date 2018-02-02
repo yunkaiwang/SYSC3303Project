@@ -4,7 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
-import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class TFTPDataPacket {
 	private static final Type type = Type.DATA; // type will always be data
@@ -45,7 +45,7 @@ public class TFTPDataPacket {
 	TFTPDataPacket(int blockNumber, byte[] fileData, int fileDataLength) {
 		if (!validBlockNumber(blockNumber))
 			throw new IllegalArgumentException("Invalid block number");
-		
+
 		if (!validFileData(fileData, fileDataLength))
 			throw new IllegalArgumentException("Invalid file data");
 		
@@ -59,20 +59,22 @@ public class TFTPDataPacket {
 	}
 	
 	public static TFTPDataPacket createFromPacket(DatagramPacket packet) {
-		return createFromPacketData(packet.getData(), packet.getLength());
+		return createFromPacketData(Arrays.copyOfRange(packet.getData(), 0, packet.getLength()), packet.getLength());
 	}
 	
 	public static TFTPDataPacket createFromPacketData(byte[] packetData, int packetDataLength) {
 		if (!validPacketData(packetData, packetDataLength))
 			throw new IllegalArgumentException("Invalid packet data");
-		int OPCODE = ByteBuffer.wrap(packetData, 0, 2).getInt();
+		int OPCODE = ((packetData[0] << 8) & 0xFF00)
+				| (packetData[1] & 0xFF);
 		if (!Type.validOPCODE(type, OPCODE))
 			throw new IllegalArgumentException("Invalid OP code");
-		int BlockNumber = ByteBuffer.wrap(packetData, 2, 2).getInt();
+		int blockNumber = ((packetData[2] << 8) & 0xFF00)
+				| (packetData[3] & 0xFF);
 		ByteArrayOutputStream stream = new ByteArrayOutputStream();
 		stream.write(packetData, HEADER_LENGTH, packetDataLength - HEADER_LENGTH);
 		packetData = stream.toByteArray();
-		return new TFTPDataPacket(BlockNumber, packetData, packetData.length);
+		return new TFTPDataPacket(blockNumber, packetData, packetData.length);
 	}
 	
 	/**
@@ -137,7 +139,10 @@ public class TFTPDataPacket {
 	 * @return byte array which contains the block number
 	 */
 	private byte[] blockNumber() {
-		return ByteBuffer.allocate(2).putInt(blockNumber).array();
+		ByteArrayOutputStream stream = new ByteArrayOutputStream();
+		stream.write(blockNumber >> 8);
+		stream.write(blockNumber);
+		return stream.toByteArray();
 	}
 	
 	/**

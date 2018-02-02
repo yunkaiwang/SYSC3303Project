@@ -4,7 +4,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
-import java.nio.ByteBuffer;
 
 public class TFTPAckPacket {
 	private static final Type type = Type.ACK; // type will always be ack
@@ -41,7 +40,10 @@ public class TFTPAckPacket {
 	 * @return byte array which contains the block number
 	 */
 	private byte[] blockNumber() {
-		return ByteBuffer.allocate(2).putInt(blockNumber).array();
+		ByteArrayOutputStream stream = new ByteArrayOutputStream();
+		stream.write(blockNumber >> 8);
+		stream.write(blockNumber);
+		return stream.toByteArray();
 	}
 	
 	/**
@@ -78,13 +80,15 @@ public class TFTPAckPacket {
 			throw new IllegalArgumentException("Invalid packet data");
 		}
 		// verify op code
-		int OPCODE = ByteBuffer.wrap(packetData, 0, 2).getInt();
+		int OPCODE = ((packetData[0] << 8) & 0xFF00)
+				| (packetData[1] & 0xFF);
 		if (!Type.validOPCODE(type, OPCODE)) {
 			throw new IllegalArgumentException("Invalid OP code");
 		}
 
-		int BlockNumber = ByteBuffer.wrap(packetData, 2, 2).getInt();
-		return new TFTPAckPacket(BlockNumber);
+		int blockNumber = ((packetData[2] << 8) & 0xFF00)
+				| (packetData[3] & 0xFF);
+		return new TFTPAckPacket(blockNumber);
 	}
 
 	/**

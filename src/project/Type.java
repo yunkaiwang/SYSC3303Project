@@ -1,6 +1,6 @@
 package project;
 
-import java.nio.ByteBuffer;
+import java.io.ByteArrayOutputStream;
 
 public enum Type {
 	RRQ(1),
@@ -21,7 +21,10 @@ public enum Type {
 	 * @return byte array which contains the OPCODE
 	 */
 	public byte[] OPCODE() {
-		return ByteBuffer.allocate(2).putInt(OPCODE).array();
+		ByteArrayOutputStream steam = new ByteArrayOutputStream();
+		steam.write(0);
+		steam.write(OPCODE);
+		return steam.toByteArray();
 	}
 	
 	/**
