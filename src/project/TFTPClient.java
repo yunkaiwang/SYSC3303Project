@@ -19,6 +19,7 @@ public class TFTPClient {
 	private Mode currentMode; // verbose or quite
 	private InetAddress serverAddress;
 	private int serverPort;
+	private int responsePort;
 	private String folder = System.getProperty("user.dir") + File.separator + "client_files" + File.separator;
 
 	TFTPClient() throws UnknownHostException {
@@ -82,10 +83,8 @@ public class TFTPClient {
 			System.out.print("Command: ");
 			String cmdLine = s.nextLine().toLowerCase(); // convert all command into lower case
 			String[] commands = cmdLine.split("\\s+"); // split all command into array of command
-			if (commands.length == 0) {
-				System.out.println("Invalid command, please try again!\n");
+			if (commands.length == 0)
 				continue;
-			}
 
 			switch (commands[0]) {
 			case "menu":
@@ -141,17 +140,18 @@ public class TFTPClient {
 	}
 	
 	private void sendRequest(TFTPAckPacket packet) throws IOException {
-		socket.send(packet.createDatagram(serverAddress, serverPort));
+		socket.send(packet.createDatagram(serverAddress, responsePort));
 	}
 	
 	private void sendRequest(TFTPDataPacket packet) throws IOException {
-		socket.send(packet.createDatagram(serverAddress, serverPort));
+		socket.send(packet.createDatagram(serverAddress, responsePort));
 	}
 	
 	private TFTPDataPacket receiveDataPacket(int blockNumber) {
 		try {
 			DatagramPacket receivePacket = new DatagramPacket(new byte[TFTPDataPacket.MAX_LENGTH], TFTPDataPacket.MAX_LENGTH);
 			socket.receive(receivePacket);
+			this.responsePort = receivePacket.getPort();
 			return TFTPDataPacket.createFromPacket(receivePacket);
 		} catch (IOException e) {
 			System.out.println("Client failed to receive the response. Please try again.\n");
@@ -163,6 +163,7 @@ public class TFTPClient {
 		try {
 			DatagramPacket receivePacket = new DatagramPacket(new byte[TFTPAckPacket.PACKET_LENGTH], TFTPAckPacket.PACKET_LENGTH);
 			socket.receive(receivePacket);
+			this.responsePort = receivePacket.getPort();
 			return TFTPAckPacket.createFromPacket(receivePacket);
 		} catch (IOException e) {
 			System.out.println("Client failed to receive the response. Please try again.\n");
@@ -192,7 +193,6 @@ public class TFTPClient {
 			
 			TFTPRequestPacket RRQPacket = TFTPRequestPacket.createReadRequest(filename);
 			sendRequest(RRQPacket);
-
 			TFTPDataPacket DATAPacket;
 			int blockNumber = 1;
 			do {
@@ -235,12 +235,6 @@ public class TFTPClient {
 			
 			do {
 				receiveAckPacket(blockNumber++);
-				try {
-					Thread.sleep(6000);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
 				byteUsed = fs.read(data);
 				if (byteUsed == -1) {
 					byteUsed = 0;
@@ -249,7 +243,6 @@ public class TFTPClient {
 				sendRequest(new TFTPDataPacket(blockNumber, Arrays.copyOfRange(data, 0, byteUsed), byteUsed));
 			} while (byteUsed == TFTPDataPacket.MAX_DATA_LENGTH);
 			receiveAckPacket(blockNumber);
-			System.out.println("Client received ack");
 			fs.close();
 		} catch (FileNotFoundException e) {
 			System.out.println("Client failed to read " + filename + ". Please try again.\n");

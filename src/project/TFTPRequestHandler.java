@@ -110,7 +110,6 @@ public class TFTPRequestHandler extends Thread {
 
 			do {
 				DATAPacket = receiveDataPacket(++blockNumber);
-				
 				fs.write(DATAPacket.getFileData());
 				sendRequest(new TFTPAckPacket(blockNumber));
 				++blockNumber;
