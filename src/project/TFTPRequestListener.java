@@ -20,7 +20,7 @@ public class TFTPRequestListener extends Thread {
 		this.acceptNewConnection = true;
 	}
 	
-	protected void refuseNewConnection() {
+	protected void stopRequestListener() {
 		this.acceptNewConnection = false;
 		socket.close(); // close socket as it will not be used any more
 	}
@@ -37,14 +37,14 @@ public class TFTPRequestListener extends Thread {
 		}
 		
 		while (acceptNewConnection) { // keep waiting for new connection
-			byte msg[] = new byte[512];
 			// create new packet for receiving new requests
-			DatagramPacket packet = new DatagramPacket(msg, msg.length);
+			DatagramPacket packet = new DatagramPacket(new byte[TFTPServer.MAX_LENGTH], TFTPServer.MAX_LENGTH);
 			try {
 				socket.receive(packet);
-				System.out.println("received new request");
-				server.createNewRequestHandler(packet, packet.getAddress(), packet.getPort()).start();
-
+				// only handle RRQ or WRQ at this moment, ignore all other requests received
+				if (server.isReadRequest(packet.getData()) || server.isWriteRequest(packet.getData())) {
+					server.createNewRequestHandler(packet, packet.getAddress(), packet.getPort()).start();
+				}
 			} catch(IOException e) {
 				// IOException raised when the socket is closed while waiting
 				// for new requests, which means new requests is received after
