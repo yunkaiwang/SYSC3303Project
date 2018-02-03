@@ -3,6 +3,7 @@ package project;
 import java.io.ByteArrayOutputStream;
 
 public enum Type {
+	// represent different type of TFTP packet
 	RRQ(1, "RRQ"),
 	WRQ(2, "WRQ"),
 	DATA(3, "DATA"),
@@ -12,6 +13,12 @@ public enum Type {
 	private int OPCODE;
 	private String type;
 	
+	/**
+	 * Constructor
+	 * 
+	 * @param OPCODE
+	 * @param type
+	 */
 	private Type(final int OPCODE, final String type) {
 		this.OPCODE = OPCODE;
 		this.type = type;
@@ -20,7 +27,7 @@ public enum Type {
 	/**
 	 * Convert the OPCODE into byte array of length 2
 	 * 
-	 * @return byte array which contains the OPCODE
+	 * @return byteArray
 	 */
 	public byte[] OPCODE() {
 		ByteArrayOutputStream steam = new ByteArrayOutputStream();
@@ -39,6 +46,11 @@ public enum Type {
 		return OPCODE == t.OPCODE;
 	}
 	
+	/**
+	 * Getter
+	 * 
+	 * @return type
+	 */
 	public String type() {
 		return type;
 	}

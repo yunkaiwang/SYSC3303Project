@@ -7,11 +7,23 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 
+/**
+ * Please note that for project iteration 1, the error simulator will not do any actual work,
+ * it will just receive an request from client, and forward the request to the server, receive
+ * the response and return the response back to the client. This class currently only contains
+ * one function which does the request-forward, and it should be sufficient for iteration 1,
+ * more functions will be added in future development.
+ * 
+ * @author yunkai wang
+ * Last modified on Feb 3, 2018
+ */
 public class TFTPErrorSimulator {
-	public static final int TFTP_LISTEN_PORT = 23;
-	
+	public static final int TFTP_LISTEN_PORT = 23; // default error simulator port
 	DatagramSocket receiveSocket, sendReceiveSocket;
 
+	/**
+	 * Constructor
+	 */
 	public TFTPErrorSimulator() {
 		try {
 			receiveSocket = new DatagramSocket(TFTP_LISTEN_PORT);
@@ -22,6 +34,9 @@ public class TFTPErrorSimulator {
 		}
 	}
 
+	/**
+	 * Wait for an request and forward the request without processing the request
+	 */
 	public void waitForRequest() {
 		DatagramPacket sendServerPacket = null, receiveServerPacket; //packet used to talk to server
 		DatagramPacket sendClientPacket = null, receiveClientPacket;
@@ -30,7 +45,8 @@ public class TFTPErrorSimulator {
 			receiveClientPacket = new DatagramPacket(data, data.length);
 
 			try {
-				receiveSocket.receive(receiveClientPacket);  //received something
+				// received a new request
+				receiveSocket.receive(receiveClientPacket);
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);
@@ -58,13 +74,14 @@ public class TFTPErrorSimulator {
 			// wait for server to response
 			receiveServerPacket = new DatagramPacket(data, data.length);
 			try {
+				// received response from server
 				sendReceiveSocket.receive(receiveServerPacket);
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);
 			}
 
-			// create a new packet to send back to the host
+			// create a new packet to send back to the client
 			try {
 				sendClientPacket = new DatagramPacket(receiveServerPacket.getData(), receiveServerPacket.getLength(),
 						                              InetAddress.getLocalHost(), receiveClientPacket.getPort());
@@ -73,7 +90,7 @@ public class TFTPErrorSimulator {
 				System.exit(1);
 			}
 			
-			// send request back to the host
+			// send request back to the client
 			try {
 				sendReceiveSocket.send(sendClientPacket);
 			} catch (IOException e) {

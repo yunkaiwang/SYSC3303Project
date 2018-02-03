@@ -4,16 +4,21 @@ public enum Mode {
 	QUITE("QUITE"),
 	VERBOSE("VERBOSE");
 	
-	String mode;
+	String mode; // string representation of the mode
 	
+	/**
+	 * Constructor
+	 * 
+	 * @param mode
+	 */
 	private Mode(String mode) {
 		this.mode = mode;
 	}
 	
 	/**
-	 * Getter for the mode string, used for printing current mode
+	 * Getter
 	 * 
-	 * @return
+	 * @return mode
 	 */
 	public String mode() {
 		return mode;
@@ -22,7 +27,7 @@ public enum Mode {
 	/**
 	 * Switch the print mode, used when the user chooses to switch the mode
 	 * 
-	 * @return mode - the new mode
+	 * @return newMode
 	 */
 	public Mode switchMode() {
 		switch (this) {
