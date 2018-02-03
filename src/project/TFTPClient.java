@@ -412,6 +412,7 @@ public class TFTPClient {
 			
 			// receive the last ack packet from the server
 			receiveAckPacket(blockNumber);
+			System.out.println("Client have received the ack packet.");
 			fs.close();
 		} catch (SocketException e) {
 			System.out.println("Client failed to create the socket, please check your network status and try again.\n");

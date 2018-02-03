@@ -126,7 +126,7 @@ public class TFTPDataPacket {
 			throw new IllegalArgumentException("Invalid packet data");
 		int OPCODE = ((packetData[0] << 8) & 0xFF00) | (packetData[1] & 0xFF);
 		if (!Type.validOPCODE(type, OPCODE))
-			throw new IllegalArgumentException("Invalid OP code");
+			throw new IllegalArgumentException("Invalid OP code " + OPCODE);
 		int blockNumber = ((packetData[2] << 8) & 0xFF00) | (packetData[3] & 0xFF);
 		ByteArrayOutputStream stream = new ByteArrayOutputStream();
 		stream.write(packetData, HEADER_LENGTH, packetDataLength - HEADER_LENGTH);
