@@ -1,6 +1,7 @@
 package project;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.util.Scanner;
@@ -53,6 +54,53 @@ public class TFTPServer {
 		System.out.println("4. switch - switch mode");
 		System.out.println("5. count - number of threads that are running");
 		System.out.println();
+	}
+	
+	public void printInformation(TFTPRequestPacket packet) throws IOException {
+		switch (this.currentMode) {
+		case QUITE: // don't print detailed information in QUITE mode
+			return;
+		case VERBOSE:
+			System.out.println("Packet type: " + packet.type());
+			System.out.println("Destination: ");
+			System.out.println("IP address: " + packet.getAddress());
+			System.out.println("Port: " + packet.getPort());
+			System.out.println("Information in this packet: ");
+			System.out.println("Filename: " + packet.getFilename());
+			System.out.println("Mode: " + packet.getMode() + "\n");
+			return;
+		}
+	}
+	
+	public void printInformation(TFTPDataPacket packet) throws IOException {
+		switch (this.currentMode) {
+		case QUITE: // don't print detailed information in QUITE mode
+			return;
+		case VERBOSE:
+			System.out.println("Packet type: " + packet.type());
+			System.out.println("Destination: ");
+			System.out.println("IP address: " + packet.getAddress());
+			System.out.println("Port: " + packet.getPort());
+			System.out.println("Information in this packet: ");
+			System.out.println("Block number: " + packet.getBlockNumber());
+			System.out.println("Data length: " + packet.getLength() + "\n");
+			return;
+		}
+	}
+	
+	public void printInformation(TFTPAckPacket packet) throws IOException {
+		switch (this.currentMode) {
+		case QUITE: // don't print detailed information in QUITE mode
+			return;
+		case VERBOSE:
+			System.out.println("Packet type: " + packet.type());
+			System.out.println("Destination: ");
+			System.out.println("IP address: " + packet.getAddress());
+			System.out.println("Port: " + packet.getPort());
+			System.out.println("Information in this packet: ");
+			System.out.println("Block number: " + packet.getBlockNumber() + "\n");
+			return;
+		}
 	}
 	
 	private void stopServer() {
@@ -108,7 +156,6 @@ public class TFTPServer {
 				continue;
 			case "switch":
 				this.switchMode();
-				System.out.println("The mode has been switched to " + this.currentMode + "\n");
 				continue;
 			case "count":
 				this.printCount();

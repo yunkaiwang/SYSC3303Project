@@ -11,6 +11,8 @@ public class TFTPAckPacket {
 	private static final int MIN_BLOCK_NUMBER = 0; // minimum block number(0)
 	private static final int MAX_BLOCK_NUMBER = 0xffff; // maximum block number(65535)
 	private int blockNumber; // block number of the packet
+	private InetAddress address;
+	private int port;
 
 	/**
 	 * Constructor
@@ -18,13 +20,19 @@ public class TFTPAckPacket {
 	 * @param blockNumber
 	 *            - the block number of the packet
 	 */
-	TFTPAckPacket(int blockNumber) {
+	TFTPAckPacket(int blockNumber, InetAddress address, int port) {
 		if (!validBlockNumber(blockNumber))
 			throw new IllegalArgumentException("Invalid block number");
 		
 		this.blockNumber = blockNumber;
+		this.address = address;
+		this.port = port;
 	}
 
+	public InetAddress getAddress() { return address; }
+	public int getPort() { return port; }
+	public String type() { return type.type(); }
+	
 	/**
 	 * Getter for the block number
 	 * 
@@ -64,7 +72,7 @@ public class TFTPAckPacket {
 	
 
 	public static TFTPAckPacket createFromPacket(DatagramPacket packet) {
-		return createFromPacketData(packet.getData(), packet.getLength());
+		return createFromPacketData(packet.getData(), packet.getLength(), packet.getAddress(), packet.getPort());
 	}
 	
 	/**
@@ -74,7 +82,7 @@ public class TFTPAckPacket {
 	 * @param packetLength
 	 * @return the byte array of the packet
 	 */
-	public static TFTPAckPacket createFromPacketData(byte[] packetData, int packetDataLength) {
+	public static TFTPAckPacket createFromPacketData(byte[] packetData, int packetDataLength, InetAddress address, int port) {
 		// check if the data length is correct
 		if (!validPacketData(packetData, packetDataLength)) {
 			throw new IllegalArgumentException("Invalid packet data");
@@ -88,7 +96,7 @@ public class TFTPAckPacket {
 
 		int blockNumber = ((packetData[2] << 8) & 0xFF00)
 				| (packetData[3] & 0xFF);
-		return new TFTPAckPacket(blockNumber);
+		return new TFTPAckPacket(blockNumber, address, port);
 	}
 
 	/**
@@ -103,8 +111,8 @@ public class TFTPAckPacket {
 		return stream.toByteArray();
 	}
 
-	public DatagramPacket createDatagram(InetAddress serverAddress, int serverPort) throws IOException {
+	public DatagramPacket createDatagram() throws IOException {
 		byte[] data = generateData();
-		return new DatagramPacket(data, data.length, serverAddress, serverPort);
+		return new DatagramPacket(data, data.length, address, port);
 	}
 }

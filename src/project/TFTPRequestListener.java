@@ -28,7 +28,7 @@ public class TFTPRequestListener extends Thread {
 	@Override
 	public void run() {
 		server.incrementNumThread(); // request listen is one thread of the server
-		System.out.println("I'm waiting for new requests");
+		ThreadLog.print("Request listener is waiting for new requests");
 		try {
 			socket = new DatagramSocket(port);
 		} catch (SocketException se) { // failed to bound the port

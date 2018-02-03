@@ -33,24 +33,52 @@ public class TFTPClient {
 		this.serverPort = port;
 	}
 
-//	private void printInformation(DatagramPacket packet) {
-//		switch (this.currentMode) {
-//		case QUITE:
-//			return;
-//		case VERBOSE:
-//			/*
-//			 * need to add more printing statements - packet type(RRQ, WRQ, etc.) -
-//			 * filename(if applicable) - mode(if applicable) - block number(if applicable) -
-//			 * number of bytes if data(if applicable) - error code(if applicable) - error
-//			 * message(if applicable)
-//			 */
-//			System.out.println("Host: " + packet.getAddress());
-//			System.out.println("Port: " + packet.getPort());
-//			System.out.println("Length: " + packet.getLength());
-//			System.out.println("Containing: " + packet.getData() + "\n");
-//			return;
-//		}
-//	}
+	private void printInformation(TFTPRequestPacket packet) throws IOException {
+		switch (this.currentMode) {
+		case QUITE: // don't print detailed information in QUITE mode
+			return;
+		case VERBOSE:
+			System.out.println("Packet type: " + packet.type());
+			System.out.println("Destination: ");
+			System.out.println("IP address: " + packet.getAddress());
+			System.out.println("Port: " + packet.getPort());
+			System.out.println("Information in this packet: ");
+			System.out.println("Filename: " + packet.getFilename());
+			System.out.println("Mode: " + packet.getMode() + "\n");
+			return;
+		}
+	}
+	
+	private void printInformation(TFTPDataPacket packet) throws IOException {
+		switch (this.currentMode) {
+		case QUITE: // don't print detailed information in QUITE mode
+			return;
+		case VERBOSE:
+			System.out.println("Packet type: " + packet.type());
+			System.out.println("Destination: ");
+			System.out.println("IP address: " + packet.getAddress());
+			System.out.println("Port: " + packet.getPort());
+			System.out.println("Information in this packet: ");
+			System.out.println("Block number: " + packet.getBlockNumber());
+			System.out.println("Data length: " + packet.getLength() + "\n");
+			return;
+		}
+	}
+	
+	private void printInformation(TFTPAckPacket packet) throws IOException {
+		switch (this.currentMode) {
+		case QUITE: // don't print detailed information in QUITE mode
+			return;
+		case VERBOSE:
+			System.out.println("Packet type: " + packet.type());
+			System.out.println("Destination: ");
+			System.out.println("IP address: " + packet.getAddress());
+			System.out.println("Port: " + packet.getPort());
+			System.out.println("Information in this packet: ");
+			System.out.println("Block number: " + packet.getBlockNumber() + "\n");
+			return;
+		}
+	}
 
 	private static void printMenu() {
 		System.out.println("Available commands:");
@@ -135,16 +163,8 @@ public class TFTPClient {
 		return getFolder() + filename;
 	}
 	
-	private void sendRequest(TFTPRequestPacket packet) throws IOException {
-		socket.send(packet.createDatagram(serverAddress, serverPort));
-	}
-	
-	private void sendRequest(TFTPAckPacket packet) throws IOException {
-		socket.send(packet.createDatagram(serverAddress, responsePort));
-	}
-	
-	private void sendRequest(TFTPDataPacket packet) throws IOException {
-		socket.send(packet.createDatagram(serverAddress, responsePort));
+	private void sendRequest(DatagramPacket packet) throws IOException {
+		socket.send(packet);
 	}
 	
 	private TFTPDataPacket receiveDataPacket(int blockNumber) {
@@ -191,14 +211,22 @@ public class TFTPClient {
 				return;
 			}
 			
-			TFTPRequestPacket RRQPacket = TFTPRequestPacket.createReadRequest(filename);
-			sendRequest(RRQPacket);
+			TFTPRequestPacket RRQPacket = TFTPRequestPacket.createReadRequest(filename, serverAddress, serverPort);
+			sendRequest(RRQPacket.createDatagram());
+			System.out.println("Client have sent the RRQ.");
+			printInformation(RRQPacket);
+			
 			TFTPDataPacket DATAPacket;
 			int blockNumber = 1;
 			do {
 				DATAPacket = receiveDataPacket(blockNumber);
+				System.out.println("Client have received the data packet.");
+				printInformation(DATAPacket);
 				fs.write(DATAPacket.getFileData());
-				sendRequest(new TFTPAckPacket(blockNumber));
+				TFTPAckPacket AckPacket = new TFTPAckPacket(blockNumber, serverAddress, responsePort);
+				sendRequest(AckPacket.createDatagram());
+				System.out.println("Client have sent the ack packet.");
+				printInformation(AckPacket);
 				++blockNumber;
 			} while (!DATAPacket.isLastDataPacket());
 			fs.close();
@@ -226,21 +254,29 @@ public class TFTPClient {
 				return;
 			}
 			
-			TFTPRequestPacket WRQPacket = TFTPRequestPacket.createWriteRequest(filename);
-			sendRequest(WRQPacket);
+			TFTPRequestPacket WRQPacket = TFTPRequestPacket.createWriteRequest(filename, serverAddress, serverPort);
+			sendRequest(WRQPacket.createDatagram());
+			System.out.println("Client have sent the WRQ.");
+			printInformation(WRQPacket);
 
 			byte[] data = new byte[TFTPDataPacket.MAX_DATA_LENGTH];
 			int byteUsed = 0;
 			int blockNumber = 0;
 			
 			do {
-				receiveAckPacket(blockNumber++);
+				TFTPAckPacket AckPacket = receiveAckPacket(blockNumber++);
+				System.out.println("Client have received the ack packet.");
+				printInformation(AckPacket);
 				byteUsed = fs.read(data);
 				if (byteUsed == -1) {
 					byteUsed = 0;
 					data = new byte[0];
 				}
-				sendRequest(new TFTPDataPacket(blockNumber, Arrays.copyOfRange(data, 0, byteUsed), byteUsed));
+				TFTPDataPacket DATAPacket = new TFTPDataPacket(blockNumber, Arrays.copyOfRange(data, 0, byteUsed), byteUsed, serverAddress, responsePort);
+				sendRequest(DATAPacket.createDatagram());
+				System.out.println("Client have sent the data packet.");
+				printInformation(DATAPacket);
+
 			} while (byteUsed == TFTPDataPacket.MAX_DATA_LENGTH);
 			receiveAckPacket(blockNumber);
 			fs.close();
