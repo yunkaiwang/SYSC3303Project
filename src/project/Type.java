@@ -3,16 +3,18 @@ package project;
 import java.io.ByteArrayOutputStream;
 
 public enum Type {
-	RRQ(1),
-	WRQ(2),
-	DATA(3),
-	ACK(4),
-	ERROR(5);
+	RRQ(1, "RRQ"),
+	WRQ(2, "WRQ"),
+	DATA(3, "DATA"),
+	ACK(4, "ACK"),
+	ERROR(5, "ERROR");
 	
 	private int OPCODE;
+	private String type;
 	
-	private Type(final int OPCODE) {
+	private Type(final int OPCODE, final String type) {
 		this.OPCODE = OPCODE;
+		this.type = type;
 	}
 	
 	/**
@@ -35,5 +37,9 @@ public enum Type {
 	 */
 	public static boolean validOPCODE(Type t, int OPCODE) {
 		return OPCODE == t.OPCODE;
+	}
+	
+	public String type() {
+		return type;
 	}
 }
