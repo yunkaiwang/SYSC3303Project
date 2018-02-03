@@ -30,6 +30,28 @@ public class TFTPRequestPacket {
 	}
 
 	/**
+	 * Check if the packet is a read request
+	 * 
+	 * @return true is the packet is a read request, false otherwise
+	 */
+	public boolean isReadRequest() {
+		return this.type == Type.RRQ;
+	}
+	
+	/**
+	 * Check if the packet is a write request
+	 * 
+	 * @return true is the packet is a write request, false otherwise
+	 */
+	public boolean isWriteRequest() {
+		return this.type == Type.WRQ;
+	}
+	
+	public byte[] getData() throws IOException {
+		return generateData();
+	}
+	
+	/**
 	 * Generate the byte array that contains all information
 	 * 
 	 * @return byteArray
