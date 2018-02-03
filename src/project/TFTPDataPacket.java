@@ -174,7 +174,7 @@ public class TFTPDataPacket {
 	 * @return true if the packet is the last packet, false otherwise
 	 */
 	public boolean isLastDataPacket() {
-		return this.fileData != null && this.fileData.length < MAX_BLOCK_NUMBER;
+		return this.fileData != null && this.fileData.length < MAX_DATA_LENGTH;
 	}
 
 	/**

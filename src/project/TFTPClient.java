@@ -181,7 +181,7 @@ public class TFTPClient {
 	}
 	
 	/**
-	 * Main loop of this file, wait for requets
+	 * Main loop of this file, wait for new requests
 	 */
 	private void waitForCommand() {
 		Scanner s = new Scanner(System.in);
