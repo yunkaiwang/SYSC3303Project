@@ -14,25 +14,45 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 public class TFTPClient {
-	private static final int default_port = 69;
+	private enum runningMode {
+		test, normal;
+	}
+	
+	private static final int DEFAULT_SERVER_PORT = 69;
+	private static final int DEFAULT_ERROR_SIMULATOR_PORT = 23;
 	DatagramSocket socket;
 	private Mode currentMode; // verbose or quite
+	private runningMode currentRunningMode; // test or normal
 	private InetAddress serverAddress;
 	private int serverPort;
 	private int responsePort;
 	private String folder = System.getProperty("user.dir") + File.separator + "client_files" + File.separator;
 
 	TFTPClient() throws UnknownHostException {
-		this(InetAddress.getLocalHost(), default_port);
+		this(InetAddress.getLocalHost(), DEFAULT_SERVER_PORT);
 	}
 
 	TFTPClient(InetAddress server, int port) {
 		// default mode is quite
 		this.currentMode = Mode.QUITE;
+		this.currentRunningMode = runningMode.normal;
 		this.serverAddress = server;
 		this.serverPort = port;
 	}
 
+	private void switchRunningMode() {
+		switch (currentRunningMode) {
+		case test:
+			currentRunningMode = runningMode.normal;
+			serverPort = DEFAULT_SERVER_PORT;
+			return;
+		case normal:
+			currentRunningMode = runningMode.test;
+			serverPort = DEFAULT_ERROR_SIMULATOR_PORT;
+			return;
+		}
+	}
+	
 	private void printInformation(TFTPRequestPacket packet) throws IOException {
 		switch (this.currentMode) {
 		case QUITE: // don't print detailed information in QUITE mode
@@ -86,12 +106,17 @@ public class TFTPClient {
 		System.out.println("2. exit - stop the client");
 		System.out.println("3. mode - show current mode");
 		System.out.println("4. switch - switch print mode(verbose or quite)");
-		System.out.println("5. read <filename> - send RRQ(i.e. read text.txt)");
-		System.out.println("6. write <filename> - send WRQ(i.e. write text.txt)\n");
+		System.out.println("5. reset - reset running mode(test or normal)");
+		System.out.println("6. read <filename> - send RRQ(i.e. read text.txt)");
+		System.out.println("7. write <filename> - send WRQ(i.e. write text.txt)\n");
 	}
 
 	private void printMode() {
 		System.out.println("Current mode is: " + currentMode.mode());
+	}
+	
+	private void printRunningMode() {
+		System.out.println("Current running mode is: " + currentRunningMode + "\n");
 	}
 
 	private void switchMode() {
@@ -102,7 +127,7 @@ public class TFTPClient {
 	private void stopClient() {
 		System.out.println("Terminating client.");
 	}
-
+	
 	private void waitForCommand() {
 		Scanner s = new Scanner(System.in);
 
@@ -127,6 +152,10 @@ public class TFTPClient {
 				continue;
 			case "switch":
 				switchMode();
+				continue;
+			case "reset":
+				switchRunningMode();
+				printRunningMode();
 				continue;
 			case "read":
 				if (commands.length != 2)
