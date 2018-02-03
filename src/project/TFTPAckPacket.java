@@ -6,37 +6,61 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 
 public class TFTPAckPacket {
-	private static final Type type = Type.ACK; // type will always be ack
-	public static final int PACKET_LENGTH = 4; // header length
+	private static final Type type = Type.ACK; // default packet type
+	public static final int PACKET_LENGTH = 4; // length of a Ack packet
 	private static final int MIN_BLOCK_NUMBER = 0; // minimum block number(0)
 	private static final int MAX_BLOCK_NUMBER = 0xffff; // maximum block number(65535)
 	private int blockNumber; // block number of the packet
-	private InetAddress address;
-	private int port;
+	private InetAddress address; // destination address
+	private int port; // destination port
 
 	/**
 	 * Constructor
 	 * 
 	 * @param blockNumber
-	 *            - the block number of the packet
+	 * @param address
+	 * @param port
 	 */
 	TFTPAckPacket(int blockNumber, InetAddress address, int port) {
 		if (!validBlockNumber(blockNumber))
 			throw new IllegalArgumentException("Invalid block number");
-		
+
 		this.blockNumber = blockNumber;
 		this.address = address;
 		this.port = port;
 	}
 
-	public InetAddress getAddress() { return address; }
-	public int getPort() { return port; }
-	public String type() { return type.type(); }
-	
 	/**
-	 * Getter for the block number
+	 * Getter
 	 * 
-	 * @return block number of the packet
+	 * @return address
+	 */
+	public InetAddress getAddress() {
+		return address;
+	}
+
+	/**
+	 * Getter
+	 * 
+	 * @return port
+	 */
+	public int getPort() {
+		return port;
+	}
+
+	/**
+	 * Getter
+	 * 
+	 * @return type
+	 */
+	public String type() {
+		return type.type();
+	}
+
+	/**
+	 * Getter
+	 * 
+	 * @return blockNumber
 	 */
 	public int getBlockNumber() {
 		return this.blockNumber;
@@ -45,7 +69,7 @@ public class TFTPAckPacket {
 	/**
 	 * Convert the block number into byte array of length 2
 	 * 
-	 * @return byte array which contains the block number
+	 * @return byteArray
 	 */
 	private byte[] blockNumber() {
 		ByteArrayOutputStream stream = new ByteArrayOutputStream();
@@ -53,7 +77,7 @@ public class TFTPAckPacket {
 		stream.write(blockNumber);
 		return stream.toByteArray();
 	}
-	
+
 	/**
 	 * Check if the given block number is valid
 	 * 
@@ -63,46 +87,58 @@ public class TFTPAckPacket {
 	private static boolean validBlockNumber(int blockNumber) {
 		return (blockNumber >= MIN_BLOCK_NUMBER && blockNumber <= MAX_BLOCK_NUMBER);
 	}
-	
-	
-	private static boolean validPacketData(byte[] packetData, int packetDataLength) {
-		return (packetData != null && packetData.length == packetDataLength &&
-				packetDataLength == PACKET_LENGTH);
-	}
-	
 
+	/**
+	 * Check if the given packet data is valid
+	 * 
+	 * @param packetData
+	 * @param packetDataLength
+	 * @return true if the packet data is valid, false otherwise
+	 */
+	private static boolean validPacketData(byte[] packetData, int packetDataLength) {
+		return (packetData != null && packetData.length == packetDataLength && packetDataLength == PACKET_LENGTH);
+	}
+
+	/**
+	 * Create new TFTPAckPacket from packet
+	 * 
+	 * @param packet
+	 * @return TFTPAckPacket
+	 */
 	public static TFTPAckPacket createFromPacket(DatagramPacket packet) {
 		return createFromPacketData(packet.getData(), packet.getLength(), packet.getAddress(), packet.getPort());
 	}
-	
+
 	/**
-	 * Generate the packet data
+	 * Create new TFTPAckPacket from packet data
 	 * 
 	 * @param packetData
-	 * @param packetLength
-	 * @return the byte array of the packet
+	 * @param packetDataLength
+	 * @param address
+	 * @param port
+	 * @return TFTPAckPacket
 	 */
-	public static TFTPAckPacket createFromPacketData(byte[] packetData, int packetDataLength, InetAddress address, int port) {
+	public static TFTPAckPacket createFromPacketData(byte[] packetData, int packetDataLength, InetAddress address,
+			int port) {
 		// check if the data length is correct
 		if (!validPacketData(packetData, packetDataLength)) {
 			throw new IllegalArgumentException("Invalid packet data");
 		}
 		// verify op code
-		int OPCODE = ((packetData[0] << 8) & 0xFF00)
-				| (packetData[1] & 0xFF);
+		int OPCODE = ((packetData[0] << 8) & 0xFF00) | (packetData[1] & 0xFF);
 		if (!Type.validOPCODE(type, OPCODE)) {
 			throw new IllegalArgumentException("Invalid OP code");
 		}
 
-		int blockNumber = ((packetData[2] << 8) & 0xFF00)
-				| (packetData[3] & 0xFF);
+		int blockNumber = ((packetData[2] << 8) & 0xFF00) | (packetData[3] & 0xFF);
 		return new TFTPAckPacket(blockNumber, address, port);
 	}
 
 	/**
-	 * Generate the data array of the current packet
+	 * Generate the byte array that contains all information
 	 * 
-	 * @return byte array which contains all the required information
+	 * @return byteArray
+	 * @throws IOException
 	 */
 	public byte[] generateData() throws IOException {
 		ByteArrayOutputStream stream = new ByteArrayOutputStream();
@@ -111,6 +147,12 @@ public class TFTPAckPacket {
 		return stream.toByteArray();
 	}
 
+	/**
+	 * Create new DatagramPacket from this ack packet
+	 * 
+	 * @return DatagramPacket
+	 * @throws IOException
+	 */
 	public DatagramPacket createDatagram() throws IOException {
 		byte[] data = generateData();
 		return new DatagramPacket(data, data.length, address, port);

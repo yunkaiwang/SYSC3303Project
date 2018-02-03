@@ -13,13 +13,21 @@ import java.util.Arrays;
 
 public class TFTPRequestHandler extends Thread {
 	private TFTPServer server; // server that this listener is working for
-	private InetAddress address;
-	private int port;
+	private InetAddress address; // client address
+	private int port; // client port
 	private DatagramSocket socket;
 	private TFTPRequestPacket packet;
-	private byte[] data;
-	private String filename;
+	private byte[] data; // packet data
+	private String filename; // filename of the request
 	
+	/**
+	 * Constructor
+	 * 
+	 * @param server
+	 * @param packet
+	 * @param address
+	 * @param port
+	 */
 	TFTPRequestHandler(TFTPServer server, DatagramPacket packet, InetAddress address, int port) {
 		this.server = server;
 		this.address = address;
@@ -29,6 +37,11 @@ public class TFTPRequestHandler extends Thread {
 		this.extractFileName(data);
 	}
 	
+	/**
+	 * Extract the filename from the data
+	 * 
+	 * @param data
+	 */
 	private void extractFileName(byte[] data) {
 		int i = 1;
 		StringBuilder filenameBuilder = new StringBuilder();
@@ -38,7 +51,9 @@ public class TFTPRequestHandler extends Thread {
 		filename = filenameBuilder.toString();
 	}
 	
-	// handle the request
+	/**
+	 * Handler the request
+	 */
 	private void handleRequest() {
 		if (server.isReadRequest(data)) { // RRQ
 			writeFileToClient();
@@ -47,19 +62,22 @@ public class TFTPRequestHandler extends Thread {
 		}
 	}
 	
-	private boolean createConnection() {
-		try {
-			socket = new DatagramSocket();
-			return true;
-		} catch (SocketException e) {
-			return false;
-		}
-	}
-	
+	/**
+	 * Send the request
+	 * 
+	 * @param packet
+	 * @throws IOException
+	 */
 	private void sendRequest(DatagramPacket packet) throws IOException {
 		socket.send(packet);
 	}
 	
+	/**
+	 * receive data packet
+	 * 
+	 * @param blockNumber
+	 * @return TFTPDataPacket
+	 */
 	private TFTPDataPacket receiveDataPacket(int blockNumber) {
 		try {
 			DatagramPacket receivePacket = new DatagramPacket(new byte[TFTPDataPacket.MAX_LENGTH], TFTPDataPacket.MAX_LENGTH);
@@ -71,6 +89,12 @@ public class TFTPRequestHandler extends Thread {
 		}
 	}
 	
+	/**
+	 * receive ack packet
+	 * 
+	 * @param blockNumber
+	 * @return TFTPAckPacket
+	 */
 	private TFTPAckPacket receiveAckPacket(int blockNumber) {
 		try {
 			DatagramPacket receivePacket = new DatagramPacket(new byte[TFTPAckPacket.PACKET_LENGTH], TFTPAckPacket.PACKET_LENGTH);
@@ -82,7 +106,10 @@ public class TFTPRequestHandler extends Thread {
 		}
 	}
 	
-	private void readFileFromClient() { // WRQ
+	/**
+	 * Handle WRQ
+	 */
+	private void readFileFromClient() {
 		try {
 			ThreadLog.print("Request handler have received the WRQ.");
 			server.printInformation(packet);
@@ -102,34 +129,41 @@ public class TFTPRequestHandler extends Thread {
 				if (!file.createNewFile())
 					throw new IOException("Failed to create " + filename);
 			}
-
+			
+			socket = new DatagramSocket();
 			FileOutputStream fs = new FileOutputStream(filePath);
-			if (!createConnection()) { // socket create failed
-				ThreadLog.print("Request handler failed to create the socket, please check your network status and try again.\n");
-				fs.close();
-				return;
-			}
 
 			int blockNumber = 0;
+			
+			// request handler forms the ack packet
 			TFTPAckPacket AckPacket = new TFTPAckPacket(blockNumber, address, port);
+			
+			// request handler sends the ack packet
 			sendRequest(AckPacket.createDatagram());
 			ThreadLog.print("Request handler have sent the Ack packet.");
 			server.printInformation(AckPacket);
 
 			TFTPDataPacket DATAPacket;
-
+			// run until all data have been received
 			do {
+				// request handler receives the data packet
 				DATAPacket = receiveDataPacket(++blockNumber);
 				ThreadLog.print("Request handler have received the Data packet.");
 				server.printInformation(DATAPacket);
 				fs.write(DATAPacket.getFileData());
-				AckPacket = new TFTPAckPacket(blockNumber, address, port);
+	
+				// request handler forms the ack packet
+				AckPacket = new TFTPAckPacket(blockNumber++, address, port);
+	
+				// request handler sends the ack packet
 				sendRequest(AckPacket.createDatagram());
 				ThreadLog.print("Request handler have sent the Ack packet.");
 				server.printInformation(AckPacket);
-				++blockNumber;
 			} while (!DATAPacket.isLastDataPacket());
 			fs.close();
+		} catch (SocketException e) {
+			ThreadLog.print("Request handler failed to create the socket, please check your network status and try again.\n");
+			return;
 		} catch (FileNotFoundException e) {
 			file.delete();
 			ThreadLog.print("Request handler failed to write " + filename + ". Please try again.\n");
@@ -142,7 +176,10 @@ public class TFTPRequestHandler extends Thread {
 		
 	}
 
-	private void writeFileToClient() { // RRQ
+	/**
+	 * Handle RRQ
+	 */
+	private void writeFileToClient() {
 		try {
 			ThreadLog.print("Request handler have received the RRQ.");
 			server.printInformation(packet);
@@ -160,12 +197,8 @@ public class TFTPRequestHandler extends Thread {
 				return;
 			}
 
+			socket = new DatagramSocket();
 			FileInputStream fs = new FileInputStream(filePath);
-			if (!createConnection()) { // socket create failed
-				ThreadLog.print("Request handler failed to create the socket, please check your network status and try again.\n");
-				fs.close();
-				return;
-			}
 			
 			byte[] data = new byte[TFTPDataPacket.MAX_DATA_LENGTH];
 			int byteUsed = 1;
@@ -173,19 +206,32 @@ public class TFTPRequestHandler extends Thread {
 			TFTPAckPacket AckPacket;
 			do {
 				byteUsed = fs.read(data);
+				
+				// special case when the file length is a multiple of 512,
+				// then just send a empty data to indicate that the file has
+				// all been transfered
 				if (byteUsed == -1) {
 					byteUsed = 0;
 					data = new byte[0];
 				}
+				
+				// request handler forms the data packet
 				TFTPDataPacket DATAPacket = new TFTPDataPacket(blockNumber, Arrays.copyOfRange(data, 0, byteUsed), byteUsed, address, port);
+				
+				// request handler sends the packet
 				sendRequest(DATAPacket.createDatagram());
 				ThreadLog.print("Request handler have sent the Data packet.");
 				server.printInformation(DATAPacket);
+				
+				// request handler forms the ack packet
 				AckPacket = receiveAckPacket(blockNumber++);
 				ThreadLog.print("Request handler have received the ack packet.");
 				server.printInformation(AckPacket);
 			} while (byteUsed == TFTPDataPacket.MAX_DATA_LENGTH);
 			fs.close();
+		} catch (SocketException e) {
+			ThreadLog.print("Request handler failed to create the socket, please check your network status and try again.\n");
+			return;
 		} catch (FileNotFoundException e) {
 			ThreadLog.print("Request handler failed to read " + filename + ". Please try again.\n");
 			return;
