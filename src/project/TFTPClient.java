@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.Scanner;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
@@ -20,17 +19,18 @@ public class TFTPClient {
 	private enum runningMode {
 		test, normal;
 	}
-	
+
 	private static final int DEFAULT_SERVER_PORT = 69; // default server port
 	private static final int DEFAULT_ERROR_SIMULATOR_PORT = 23; // default error simulator port
-	// default folder location
-	private static final String defaultFolder = System.getProperty("user.dir") + File.separator + "client_files" + File.separator;
+	// default folder directory
+	private static final String defaultFolder = System.getProperty("user.dir") + File.separator + "client_files"
+			+ File.separator;
 	DatagramSocket socket;
 	private Mode currentMode; // verbose or quite, in verbose mode, all information will get printed
 	private runningMode currentRunningMode; // test or normal, as described above
 	private InetAddress serverAddress; // server address
-	private int serverPort;  // server port
-	private String folder = defaultFolder; // current folder location
+	private int serverPort; // server port
+	private String folder = defaultFolder; // current folder directory
 
 	/**
 	 * Constructor
@@ -56,8 +56,8 @@ public class TFTPClient {
 	}
 
 	/**
-	 * Switch the running mode(test/normal), after the mode has been switched,
-	 * the server port will be updated accordingly
+	 * Switch the running mode(test/normal), after the mode has been switched, the
+	 * server port will be updated accordingly
 	 */
 	private void switchRunningMode() {
 		switch (currentRunningMode) {
@@ -71,7 +71,7 @@ public class TFTPClient {
 			return;
 		}
 	}
-	
+
 	/**
 	 * Print information in the packet
 	 * 
@@ -93,7 +93,7 @@ public class TFTPClient {
 			return;
 		}
 	}
-	
+
 	/**
 	 * Print information in the packet
 	 * 
@@ -115,7 +115,7 @@ public class TFTPClient {
 			return;
 		}
 	}
-	
+
 	/**
 	 * Print information in the packet
 	 * 
@@ -142,13 +142,17 @@ public class TFTPClient {
 	 */
 	private static void printMenu() {
 		System.out.println("Available commands:");
-		System.out.println("1. menu - show the menu");
-		System.out.println("2. exit - stop the client");
-		System.out.println("3. mode - show current mode");
-		System.out.println("4. switch - switch print mode(verbose or quite)");
-		System.out.println("5. reset - reset running mode(test or normal)");
-		System.out.println("6. read <filename> - send RRQ(i.e. read text.txt)");
-		System.out.println("7. write <filename> - send WRQ(i.e. write text.txt)\n");
+		System.out.println("  menu             - show the menu");
+		System.out.println("  exit             - stop the client");
+		System.out.println("  mode             - show current mode");
+		System.out.println("  switch           - switch print mode(verbose or quite)");
+		System.out.println("  reset            - reset running mode(test or normal)");
+		System.out.println("  la               - list of files under current directory");
+		System.out.println("  pwd/dir          - current directory");
+		System.out.println(
+				"  cd <folder>      - change directory, new directoly location should be written using /(i.e. ../new_client/");
+		System.out.println("  read <filename>  - send RRQ(i.e. read text.txt)");
+		System.out.println("  write <filename> - send WRQ(i.e. write text.txt)\n");
 	}
 
 	/**
@@ -157,7 +161,7 @@ public class TFTPClient {
 	private void printMode() {
 		System.out.println("Current mode is: " + currentMode.mode());
 	}
-	
+
 	/**
 	 * Print current running mode(test/normal)
 	 */
@@ -179,7 +183,54 @@ public class TFTPClient {
 	private void stopClient() {
 		System.out.println("Terminating client.");
 	}
-	
+
+	/**
+	 * Print current directory
+	 */
+	private void printDirectory() {
+		System.out.println("Current directory is: " + this.getFolder() + "\n");
+	}
+
+	/**
+	 * Switch the directory to a new path
+	 * 
+	 * @param newDirectoryPath
+	 */
+	private void switchDirectory(String newDirectoryPath) {
+		String prevFolder = this.getFolder(); // previous directory path. used for restoring directory path
+		String[] directoryPath = newDirectoryPath.split("/");
+		for (String dir : directoryPath) {
+			if (dir.length() == 0)
+				continue;
+			else if (dir.equals("..")) {
+				if (this.folder.indexOf(File.separator) != -1) {
+					this.setFolder(this.folder.substring(0,
+							this.folder.substring(0, this.folder.length() - 1).lastIndexOf(File.separator))
+							+ File.separator);
+				} else {
+					System.out.println("New directory path is invalid, please try again.\n");
+					this.setFolder(prevFolder); // restore directory path
+				}
+			} else {
+				this.setFolder(this.getFolder() + dir + File.separator);
+				File path = new File(this.folder);
+				if (!path.exists()) {
+					System.out.println("New directory path is invalid, please try again.\n");
+					this.setFolder(prevFolder); // restore directory path
+				}
+			}
+		}
+	}
+
+	private void printListFiles() {
+		File folder = new File(this.getFolder());
+		File[] listOfFiles = folder.listFiles();
+
+		for (File file : listOfFiles)
+			System.out.println(file.getName());
+		System.out.println();
+	}
+
 	/**
 	 * Main loop of this file, wait for new requests
 	 */
@@ -189,12 +240,11 @@ public class TFTPClient {
 		printMenu();
 		while (true) {
 			System.out.print("Command: ");
-			String cmdLine = s.nextLine().toLowerCase(); // convert all command into lower case
-			String[] commands = cmdLine.split("\\s+"); // split all command into array of command
+			String[] commands = s.nextLine().split("\\s+"); // split all command into array of command
 			if (commands.length == 0)
 				continue;
 
-			switch (commands[0]) {
+			switch (commands[0].toLowerCase()) {
 			case "menu":
 				printMenu();
 				continue;
@@ -202,6 +252,16 @@ public class TFTPClient {
 				s.close(); // close the scanner
 				stopClient();
 				return;
+			case "pwd":
+			case "dir":
+				printDirectory();
+				continue;
+			case "la":
+				printListFiles();
+				continue;
+			case "cd":
+				switchDirectory(commands[1]);
+				continue;
 			case "mode":
 				printMode();
 				continue;
@@ -229,7 +289,16 @@ public class TFTPClient {
 			}
 		}
 	}
-	
+
+	/**
+	 * Setter
+	 * 
+	 * @return folder
+	 */
+	private void setFolder(String newFolder) {
+		this.folder = newFolder;
+	}
+
 	/**
 	 * Getter
 	 * 
@@ -238,7 +307,7 @@ public class TFTPClient {
 	private String getFolder() {
 		return folder;
 	}
-	
+
 	/**
 	 * Create the file path by combining the folder location and filename
 	 * 
@@ -248,45 +317,29 @@ public class TFTPClient {
 	private String getFilePath(String filename) {
 		return getFolder() + filename;
 	}
-	
+
 	/**
 	 * Send packet
 	 * 
 	 * @param packet
 	 * @throws IOException
 	 */
-	private void sendRequest(DatagramPacket packet) throws IOException {
+	private void sendPacket(DatagramPacket packet) throws IOException {
 		socket.send(packet);
 	}
-	
+
 	/**
-	 * receive data packet
+	 * receive packet
 	 * 
 	 * @param blockNumber
 	 * @return TFTPDataPacket
 	 */
-	private TFTPDataPacket receiveDataPacket(int blockNumber) {
+	private DatagramPacket receivePacket() {
 		try {
-			DatagramPacket receivePacket = new DatagramPacket(new byte[TFTPDataPacket.MAX_LENGTH], TFTPDataPacket.MAX_LENGTH);
+			DatagramPacket receivePacket = new DatagramPacket(new byte[TFTPPacket.MAX_LENGTH],
+					TFTPPacket.MAX_LENGTH);
 			socket.receive(receivePacket);
-			return TFTPDataPacket.createFromPacket(receivePacket);
-		} catch (IOException e) {
-			System.out.println("Client failed to receive the response. Please try again.\n");
-			return null;
-		}
-	}
-	
-	/**
-	 * receive ack packet
-	 * 
-	 * @param blockNumber
-	 * @return TFTPAckPacket
-	 */
-	private TFTPAckPacket receiveAckPacket(int blockNumber) {
-		try {
-			DatagramPacket receivePacket = new DatagramPacket(new byte[TFTPAckPacket.PACKET_LENGTH], TFTPAckPacket.PACKET_LENGTH);
-			socket.receive(receivePacket);
-			return TFTPAckPacket.createFromPacket(receivePacket);
+			return receivePacket;
 		} catch (IOException e) {
 			System.out.println("Client failed to receive the response. Please try again.\n");
 			return null;
@@ -301,6 +354,7 @@ public class TFTPClient {
 	public void readFileFromServer(String filename) {
 		String filePath = getFilePath(filename);
 		File file = null;
+		FileOutputStream fs = null;
 		try {
 			file = new File(filePath);
 			if (file.exists() && !file.canWrite()) { // file already exists and cannot be override
@@ -312,38 +366,55 @@ public class TFTPClient {
 			}
 
 			socket = new DatagramSocket();
-			FileOutputStream fs = new FileOutputStream(file);
-			
+			fs = new FileOutputStream(file);
+
 			// form the RRQ packet
 			TFTPRequestPacket RRQPacket = TFTPRequestPacket.createReadRequest(filename, serverAddress, serverPort);
-			
+
 			// send the RRQ packet
-			sendRequest(RRQPacket.createDatagram());
+			sendPacket(RRQPacket.createDatagramPacket());
 			System.out.println("Client have sent the RRQ.");
 			printInformation(RRQPacket);
+			
 			TFTPDataPacket DATAPacket;
 			int blockNumber = 1; // the first packet that received should have block number 1
-			
+
 			// run until we received the last data packet
 			do {
 				// receive the data packet
-				DATAPacket = receiveDataPacket(blockNumber);
+				TFTPPacket packet = TFTPPacket.createFromPacket(receivePacket());
+				
+				if (packet instanceof TFTPDataPacket)
+					DATAPacket = (TFTPDataPacket) packet;
+				else if (packet instanceof TFTPErrorPacket)
+					throw new TFTPErrorException(((TFTPErrorPacket) packet).getErrorMsg());
+				else
+					throw new TFTPErrorException("Unknown packet received.");
+				
 				System.out.println("Client have received the data packet.");
 				printInformation(DATAPacket);
-				
+
 				// write to the file
 				fs.write(DATAPacket.getFileData());
-				
+
 				// form the ack packet
 				TFTPAckPacket AckPacket = new TFTPAckPacket(blockNumber, DATAPacket.getAddress(), DATAPacket.getPort());
-				
+
 				// send the ack packet
-				sendRequest(AckPacket.createDatagram());
+				sendPacket(AckPacket.createDatagramPacket());
 				System.out.println("Client have sent the ack packet.");
 				printInformation(AckPacket);
 				++blockNumber;
 			} while (!DATAPacket.isLastDataPacket());
 			fs.close();
+		} catch (TFTPErrorException e) {
+			System.out.println("TFTP Error: Failed to read " + filename + " from server as client received the following error message:");
+			System.out.println(e.getMessage());
+			try {
+				fs.close();
+			} catch (IOException e1) {
+			}
+			return;
 		} catch (SocketException e) {
 			System.out.println("Client failed to create the socket, please check your network status and try again.\n");
 			return;
@@ -362,21 +433,27 @@ public class TFTPClient {
 	public void writeFileToServer(String filename) {
 		String filePath = getFilePath(filename);
 		File file = null;
+		FileInputStream fs = null;
 		try {
 			file = new File(filePath);
-			if (!file.exists() || !file.canRead()) { // file not exist or file cannot be read
+			if (!file.exists()) { // file not exist, notify the user
+				System.out.println(filename + " not exist in the folder. Please try again\n");
+				return;
+			}
+
+			if (!file.canRead()) { // file cannot be read, notify the user
 				System.out.println("Client don't have permission to read " + filename + ". Please try again.\n");
 				return;
 			}
-			
+
 			socket = new DatagramSocket();
-			FileInputStream fs = new FileInputStream(filePath);
-	
+			fs = new FileInputStream(filePath);
+
 			// form the WRQ packet
 			TFTPRequestPacket WRQPacket = TFTPRequestPacket.createWriteRequest(filename, serverAddress, serverPort);
-			
+
 			// send the WRQ packet
-			sendRequest(WRQPacket.createDatagram());
+			sendPacket(WRQPacket.createDatagramPacket());
 			System.out.println("Client have sent the WRQ.");
 			printInformation(WRQPacket);
 
@@ -384,14 +461,23 @@ public class TFTPClient {
 			int byteUsed = 0;
 			int blockNumber = 0; // the first packet received should have block number 0
 			
+			TFTPAckPacket AckPacket = null; // for receiving ack packet
 			// run until we have sent all the information
 			do {
-				// receive the ack packet
-				TFTPAckPacket AckPacket = receiveAckPacket(blockNumber++);
+				// receive the datagram packet
+				TFTPPacket packet = TFTPPacket.createFromPacket(receivePacket());
+				
+				if (packet instanceof TFTPAckPacket)
+					AckPacket = (TFTPAckPacket) packet;
+				else if (packet instanceof TFTPErrorPacket)
+					throw new TFTPErrorException(((TFTPErrorPacket) packet).getErrorMsg());
+				else
+					throw new TFTPErrorException("Unknown packet received.");
+				
 				System.out.println("Client have received the ack packet.");
 				printInformation(AckPacket);
 				byteUsed = fs.read(data);
-				
+
 				// special case when the file length is a multiple of 512,
 				// then just send a empty data to indicate that the file has
 				// all been transfered
@@ -399,26 +485,39 @@ public class TFTPClient {
 					byteUsed = 0;
 					data = new byte[0];
 				}
-				
+
 				// form the data packet that will be sent to the server
-				TFTPDataPacket DATAPacket = new TFTPDataPacket(blockNumber, Arrays.copyOfRange(data, 0, byteUsed), byteUsed,
-						AckPacket.getAddress(), AckPacket.getPort());
-				
+				TFTPDataPacket DATAPacket = new TFTPDataPacket(blockNumber, Arrays.copyOfRange(data, 0, byteUsed),
+						byteUsed, AckPacket.getAddress(), AckPacket.getPort());
+
 				// send the data packet
-				sendRequest(DATAPacket.createDatagram());
+				sendPacket(DATAPacket.createDatagramPacket());
 				System.out.println("Client have sent the data packet.");
 				printInformation(DATAPacket);
 			} while (byteUsed == TFTPDataPacket.MAX_DATA_LENGTH);
-			
+
 			// receive the last ack packet from the server
-			receiveAckPacket(blockNumber);
+			TFTPPacket packet = TFTPPacket.createFromPacket(receivePacket());
+			
+			if (packet instanceof TFTPAckPacket)
+				AckPacket = (TFTPAckPacket) packet;
+			else if (packet instanceof TFTPErrorPacket)
+				throw new TFTPErrorException(((TFTPErrorPacket) packet).getErrorMsg());
+			else
+				throw new TFTPErrorException("Unknown packet received.");
+			
 			System.out.println("Client have received the ack packet.");
 			fs.close();
+		} catch (TFTPErrorException e) {
+			System.out.println("TFTP Error: Failed to write " + filename + " to server as client received the following error message:");
+			System.out.println(e.getMessage());
+			try {
+				fs.close();
+			} catch (IOException e1) {
+			}
+			return;
 		} catch (SocketException e) {
 			System.out.println("Client failed to create the socket, please check your network status and try again.\n");
-			return;
-		} catch (FileNotFoundException e) {
-			System.out.println("Client failed to read " + filename + ". Please try again.\n");
 			return;
 		} catch (IOException e) {
 			System.out.println("Client failed to send the request. Please try again.\n");

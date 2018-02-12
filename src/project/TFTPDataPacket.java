@@ -6,17 +6,14 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.util.Arrays;
 
-public class TFTPDataPacket {
-	private static final Type type = Type.DATA; // default packet type
-	public static final int MAX_LENGTH = 516; // max packet data length
+public class TFTPDataPacket extends TFTPPacket {
+	private static final Type DEFAULT_TYPE = Type.DATA; // default packet type
 	private static final int HEADER_LENGTH = 4; // packet header length
 	public static final int MAX_DATA_LENGTH = 512; // max data length
 	private static final int MIN_BLOCK_NUMBER = 0; // minimum block number(0)
 	private static final int MAX_BLOCK_NUMBER = 0xffff; // maximum block number(65535)
 	private int blockNumber; // block number of the packet
 	private byte[] fileData; // file data of the packet
-	private InetAddress address; // destination address
-	private int port; // destination port
 
 	/**
 	 * Constructor
@@ -28,6 +25,7 @@ public class TFTPDataPacket {
 	 * @param port
 	 */
 	TFTPDataPacket(int blockNumber, byte[] fileData, int fileDataLength, InetAddress address, int port) {
+		super(DEFAULT_TYPE, address, port);
 		if (!validBlockNumber(blockNumber))
 			throw new IllegalArgumentException("Invalid block number");
 
@@ -41,26 +39,6 @@ public class TFTPDataPacket {
 			this.fileData = new byte[fileDataLength];
 			System.arraycopy(fileData, 0, this.fileData, 0, fileDataLength);
 		}
-		this.address = address;
-		this.port = port;
-	}
-
-	/**
-	 * Getter
-	 * 
-	 * @return address
-	 */
-	public InetAddress getAddress() {
-		return address;
-	}
-
-	/**
-	 * Getter
-	 * 
-	 * @return
-	 */
-	public int getPort() {
-		return port;
 	}
 
 	/**
@@ -71,15 +49,6 @@ public class TFTPDataPacket {
 	 */
 	public int getLength() throws IOException {
 		return fileData.length;
-	}
-
-	/**
-	 * Getter
-	 * 
-	 * @return
-	 */
-	public String type() {
-		return type.type();
 	}
 
 	/**
@@ -125,7 +94,7 @@ public class TFTPDataPacket {
 		if (!validPacketData(packetData, packetDataLength))
 			throw new IllegalArgumentException("Invalid packet data");
 		int OPCODE = ((packetData[0] << 8) & 0xFF00) | (packetData[1] & 0xFF);
-		if (!Type.validOPCODE(type, OPCODE))
+		if (!Type.validOPCODE(DEFAULT_TYPE, OPCODE))
 			throw new IllegalArgumentException("Invalid OP code " + OPCODE);
 		int blockNumber = ((packetData[2] << 8) & 0xFF00) | (packetData[3] & 0xFF);
 		ByteArrayOutputStream stream = new ByteArrayOutputStream();
@@ -195,22 +164,12 @@ public class TFTPDataPacket {
 	 * @return byteArray
 	 * @throws IOException
 	 */
+	@Override
 	public byte[] generateData() throws IOException {
 		ByteArrayOutputStream steam = new ByteArrayOutputStream();
-		steam.write(type.OPCODE());
+		steam.write(DEFAULT_TYPE.OPCODE());
 		steam.write(blockNumber());
 		steam.write(fileData, 0, fileData.length);
 		return steam.toByteArray();
-	}
-
-	/**
-	 * Create new DatagramPacket from this data packet
-	 * 
-	 * @return DatagramPacket
-	 * @throws IOException
-	 */
-	public DatagramPacket createDatagram() throws IOException {
-		byte[] data = generateData();
-		return new DatagramPacket(data, data.length, address, port);
 	}
 }

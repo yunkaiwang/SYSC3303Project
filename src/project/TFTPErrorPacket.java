@@ -15,14 +15,12 @@ import java.util.Arrays;
  * class. More functions will be added in later iterations.
  * 
  * @author yunkai wang
- * Last modified on Feb 3, 2018
+ * Last modified on Feb 11, 2018
  */
-public class TFTPErrorPacket {
-	private static final Type type = Type.ERROR; // default packet type
-	private int errorCode; // error code
+public class TFTPErrorPacket extends TFTPPacket {
+	private static final Type DEFAULT_TYPE = Type.ERROR; // default packet type
 	private String errorMsg; // error message
-	private InetAddress address; // destination address
-	private int port; // destination port
+	private TFTPErrorType errorType; // error type
 
 	/**
 	 * Constructor
@@ -33,28 +31,9 @@ public class TFTPErrorPacket {
 	 * @param port
 	 */
 	TFTPErrorPacket(int errorCode, String errorMsg, InetAddress address, int port) {
-		this.errorCode = errorCode;
+		super(DEFAULT_TYPE, address, port);
 		this.errorMsg = errorMsg;
-		this.address = address;
-		this.port = port;
-	}
-
-	/**
-	 * Getter
-	 * 
-	 * @return address
-	 */
-	public InetAddress getAddress() {
-		return address;
-	}
-
-	/**
-	 * Getter
-	 * 
-	 * @return port
-	 */
-	public int getPort() {
-		return port;
+		this.errorType = TFTPErrorType.getErrorType(errorCode);
 	}
 
 	/**
@@ -63,16 +42,7 @@ public class TFTPErrorPacket {
 	 * @return errorCode
 	 */
 	public int getErrorCode() {
-		return errorCode;
-	}
-
-	/**
-	 * Getter
-	 * 
-	 * @return type
-	 */
-	public String type() {
-		return type.type();
+		return errorType.getErrorCode();
 	}
 
 	/**
@@ -107,7 +77,7 @@ public class TFTPErrorPacket {
 	public static TFTPErrorPacket createFromPacketData(byte[] packetData, int packetDataLength, InetAddress address,
 			int port) {
 		int OPCODE = ((packetData[0] << 8) & 0xFF00) | (packetData[1] & 0xFF);
-		if (!Type.validOPCODE(type, OPCODE))
+		if (!Type.validOPCODE(DEFAULT_TYPE, OPCODE))
 			throw new IllegalArgumentException("Invalid OP code");
 		int errorCode = ((packetData[2] << 8) & 0xFF00) | (packetData[3] & 0xFF);
 
@@ -127,6 +97,7 @@ public class TFTPErrorPacket {
 	 */
 	private byte[] errorCode() {
 		ByteArrayOutputStream stream = new ByteArrayOutputStream();
+		int errorCode = errorType.getErrorCode();
 		stream.write(errorCode >> 8);
 		stream.write(errorCode);
 		return stream.toByteArray();
@@ -138,22 +109,12 @@ public class TFTPErrorPacket {
 	 * @return byteArray
 	 * @throws IOException
 	 */
-	public byte[] generateData() throws IOException {
+	@Override
+	protected byte[] generateData() throws IOException {
 		ByteArrayOutputStream steam = new ByteArrayOutputStream();
-		steam.write(type.OPCODE());
+		steam.write(DEFAULT_TYPE.OPCODE());
 		steam.write(errorCode());
 		steam.write(errorMsg.getBytes(), 0, errorMsg.getBytes().length);
 		return steam.toByteArray();
-	}
-
-	/**
-	 * Create new DatagramPacket from this error packet
-	 * 
-	 * @return DatagramPacket
-	 * @throws IOException
-	 */
-	public DatagramPacket createDatagram() throws IOException {
-		byte[] data = generateData();
-		return new DatagramPacket(data, data.length, address, port);
 	}
 }

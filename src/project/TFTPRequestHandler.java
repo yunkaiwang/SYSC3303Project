@@ -139,7 +139,7 @@ public class TFTPRequestHandler extends Thread {
 			TFTPAckPacket AckPacket = new TFTPAckPacket(blockNumber, address, port);
 			
 			// request handler sends the ack packet
-			sendRequest(AckPacket.createDatagram());
+			sendRequest(AckPacket.createDatagramPacket());
 			ThreadLog.print("Request handler have sent the Ack packet.");
 			server.printInformation(AckPacket);
 
@@ -156,7 +156,7 @@ public class TFTPRequestHandler extends Thread {
 				AckPacket = new TFTPAckPacket(blockNumber++, address, port);
 	
 				// request handler sends the ack packet
-				sendRequest(AckPacket.createDatagram());
+				sendRequest(AckPacket.createDatagramPacket());
 				ThreadLog.print("Request handler have sent the Ack packet.");
 				server.printInformation(AckPacket);
 			} while (!DATAPacket.isLastDataPacket());
@@ -219,7 +219,7 @@ public class TFTPRequestHandler extends Thread {
 				TFTPDataPacket DATAPacket = new TFTPDataPacket(blockNumber, Arrays.copyOfRange(data, 0, byteUsed), byteUsed, address, port);
 				
 				// request handler sends the packet
-				sendRequest(DATAPacket.createDatagram());
+				sendRequest(DATAPacket.createDatagramPacket());
 				ThreadLog.print("Request handler have sent the Data packet.");
 				server.printInformation(DATAPacket);
 				
