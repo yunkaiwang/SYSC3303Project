@@ -14,8 +14,7 @@ import java.util.Arrays;
  * we are just defining a few functions that we think are important in this
  * class. More functions will be added in later iterations.
  * 
- * @author yunkai wang
- * Last modified on Feb 11, 2018
+ * @author yunkai wang Last modified on Feb 11, 2018
  */
 public class TFTPErrorPacket extends TFTPPacket {
 	private static final Type DEFAULT_TYPE = Type.ERROR; // default packet type
@@ -26,16 +25,118 @@ public class TFTPErrorPacket extends TFTPPacket {
 	 * Constructor
 	 * 
 	 * @param errorCode
+	 * @param address
+	 * @param port
+	 */
+	private TFTPErrorPacket(int errorCode, InetAddress address, int port) {
+		super(DEFAULT_TYPE, address, port);
+		this.errorType = TFTPErrorType.getErrorType(errorCode);
+		this.errorMsg = errorType.defaultErrorMsg();
+	}
+	
+	/**
+	 * Constructor without defined error message, using the default error message
+	 * 
+	 * @param errorCode
 	 * @param errorMsg
 	 * @param address
 	 * @param port
 	 */
-	TFTPErrorPacket(int errorCode, String errorMsg, InetAddress address, int port) {
+	private TFTPErrorPacket(int errorCode, String errorMsg, InetAddress address, int port) {
 		super(DEFAULT_TYPE, address, port);
 		this.errorMsg = errorMsg;
 		this.errorType = TFTPErrorType.getErrorType(errorCode);
 	}
 
+	/**
+	 * Create new file not found error packet without defined error message
+	 * 
+	 * @param address
+	 * @param port
+	 * @return TFTPErrorPacket
+	 */
+	public static TFTPErrorPacket createFileNotFoundErrorPacket(InetAddress address, int port) {
+		return new TFTPErrorPacket(1, address, port);
+	}
+	
+	/**
+	 * Create new file not found error packet with defined error message
+	 * 
+	 * @param address
+	 * @param port
+	 * @return TFTPErrorPacket
+	 */
+	public static TFTPErrorPacket createFileNotFoundErrorPacket(String msg, InetAddress address, int port) {
+		return new TFTPErrorPacket(1, msg, address, port);
+	}
+	
+	/**
+	 * Create new access violation error packet without defined error message
+	 * 
+	 * @param address
+	 * @param port
+	 * @return TFTPErrorPacket
+	 */
+	public static TFTPErrorPacket createAccessViolationErrorPacket(InetAddress address, int port) {
+		return new TFTPErrorPacket(2, address, port);
+	}
+	
+	/**
+	 * Create new access violation error packet with defined error message
+	 * 
+	 * @param address
+	 * @param port
+	 * @return TFTPErrorPacket
+	 */
+	public static TFTPErrorPacket createAccessViolationErrorPacket(String msg, InetAddress address, int port) {
+		return new TFTPErrorPacket(2, msg, address, port);
+	}
+	
+	/**
+	 * Create new disk full error packet without defined error message
+	 * 
+	 * @param address
+	 * @param port
+	 * @return TFTPErrorPacket
+	 */
+	public static TFTPErrorPacket createDiskfullErrorPacket(InetAddress address, int port) {
+		return new TFTPErrorPacket(3, address, port);
+	}
+	
+	/**
+	 * Create new disk full error packet with defined error message
+	 * 
+	 * @param address
+	 * @param port
+	 * @return TFTPErrorPacket
+	 */
+	public static TFTPErrorPacket createDiskfullErrorPacket(String msg, InetAddress address, int port) {
+		return new TFTPErrorPacket(3, msg, address, port);
+	}
+	
+	/**
+	 * Create new file already exists error packet without defined error message
+	 * 
+	 * @param address
+	 * @param port
+	 * @return TFTPErrorPacket
+	 */
+	public static TFTPErrorPacket createFileAlreadyExistErrorPacket(InetAddress address, int port) {
+		return new TFTPErrorPacket(6, address, port);
+	}
+	
+	/**
+	 * Create new file already exists error packet with defined error message
+	 * 
+	 * @param address
+	 * @param port
+	 * @return TFTPErrorPacket
+	 */
+	public static TFTPErrorPacket createFileAlreadyExistErrorPacket(String msg, InetAddress address, int port) {
+		return new TFTPErrorPacket(6, msg, address, port);
+	}
+
+	
 	/**
 	 * Getter
 	 * 
@@ -83,10 +184,14 @@ public class TFTPErrorPacket extends TFTPPacket {
 
 		int i = 3;
 		StringBuilder filenameBuilder = new StringBuilder();
-		while (packetData[++i] != 0 && i < packetDataLength) {
+		while (packetData[++i] != 0 && i < (packetDataLength - 1)) {
 			filenameBuilder.append((char) packetData[i]);
 		}
+		
 		String errorMsg = filenameBuilder.toString();
+		if (packetData[i] != 0)
+			throw new IllegalArgumentException("Invalid packet data");
+		
 		return new TFTPErrorPacket(errorCode, errorMsg, address, port);
 	}
 
@@ -111,10 +216,11 @@ public class TFTPErrorPacket extends TFTPPacket {
 	 */
 	@Override
 	protected byte[] generateData() throws IOException {
-		ByteArrayOutputStream steam = new ByteArrayOutputStream();
-		steam.write(DEFAULT_TYPE.OPCODE());
-		steam.write(errorCode());
-		steam.write(errorMsg.getBytes(), 0, errorMsg.getBytes().length);
-		return steam.toByteArray();
+		ByteArrayOutputStream stream = new ByteArrayOutputStream();
+		stream.write(DEFAULT_TYPE.OPCODE());
+		stream.write(errorCode());
+		stream.write(errorMsg.getBytes(), 0, errorMsg.getBytes().length);
+		stream.write(0);
+		return stream.toByteArray();
 	}
 }

@@ -3,7 +3,6 @@ package project;
 import java.net.DatagramSocket;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -106,6 +105,39 @@ public class TFTPRequestHandler extends Thread {
 		}
 	}
 	
+	private void sendFileNotFound(String errorMsg) {
+		ThreadLog.print("Request handler has sent file not found error packet back to client.");
+		TFTPErrorPacket errorPacket = TFTPErrorPacket.createFileNotFoundErrorPacket(errorMsg, address, port);
+		try {
+			sendRequest(errorPacket.createDatagramPacket());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	private void sendFileAlreadyExist(String errorMsg) {
+		ThreadLog.print("Request handler has sent file already exist error packet back to client.");
+		TFTPErrorPacket errorPacket = TFTPErrorPacket.createFileAlreadyExistErrorPacket(errorMsg, address, port);
+		try {
+			sendRequest(errorPacket.createDatagramPacket());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	private void sendAccessViolation(String errorMsg) {
+		ThreadLog.print("Request handler has sent access violation error packet back to client.");
+		TFTPErrorPacket errorPacket = TFTPErrorPacket.createAccessViolationErrorPacket(errorMsg, address, port);
+		try {
+			sendRequest(errorPacket.createDatagramPacket());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	/**
 	 * Handle WRQ
 	 */
@@ -121,16 +153,18 @@ public class TFTPRequestHandler extends Thread {
 		String filePath = server.getFilePath(filename);
 		File file = null;
 		try {
+			socket = new DatagramSocket();
+
 			file = new File(filePath);
-			if (file.exists() && !file.canWrite()) {
-				ThreadLog.print("Request handler don't have permission to write " + filename + ". Please try again.\n");
+			if (file.exists()) {
+				sendFileAlreadyExist(filename + " already exists in server folder!");
 				return;
-			} else if (!file.exists()) { // create the file
-				if (!file.createNewFile())
-					throw new IOException("Failed to create " + filename);
+			}
+			if (!file.canWrite()) {
+				sendAccessViolation(filename + " cannot be override!");
+				return;
 			}
 			
-			socket = new DatagramSocket();
 			FileOutputStream fs = new FileOutputStream(filePath);
 
 			int blockNumber = 0;
@@ -164,10 +198,6 @@ public class TFTPRequestHandler extends Thread {
 		} catch (SocketException e) {
 			ThreadLog.print("Request handler failed to create the socket, please check your network status and try again.\n");
 			return;
-		} catch (FileNotFoundException e) {
-			file.delete();
-			ThreadLog.print("Request handler failed to write " + filename + ". Please try again.\n");
-			return;
 		} catch (IOException e) {
 			file.delete();
 			ThreadLog.print("Request handler failed to send the request. Please try again.\n");
@@ -191,13 +221,19 @@ public class TFTPRequestHandler extends Thread {
 		String filePath = server.getFilePath(filename);
 		File file = null;
 		try {
+			socket = new DatagramSocket();
+
 			file = new File(filePath);
-			if (!file.exists() || !file.canRead()) {
-				ThreadLog.print("Request handler don't have permission to read " + filename + ". Please try again.\n");
+			if (!file.exists()) {
+				this.sendFileNotFound(filename + " not found in server's folder.");
+				return;
+			}
+			
+			if (!file.canRead()) {
+				this.sendAccessViolation("Server has no permission to read " + filename);
 				return;
 			}
 
-			socket = new DatagramSocket();
 			FileInputStream fs = new FileInputStream(filePath);
 			
 			byte[] data = new byte[TFTPDataPacket.MAX_DATA_LENGTH];
@@ -231,9 +267,6 @@ public class TFTPRequestHandler extends Thread {
 			fs.close();
 		} catch (SocketException e) {
 			ThreadLog.print("Request handler failed to create the socket, please check your network status and try again.\n");
-			return;
-		} catch (FileNotFoundException e) {
-			ThreadLog.print("Request handler failed to read " + filename + ". Please try again.\n");
 			return;
 		} catch (IOException e) {
 			ThreadLog.print("Request handler failed to send the request. Please try again.\n");

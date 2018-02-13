@@ -166,10 +166,10 @@ public class TFTPDataPacket extends TFTPPacket {
 	 */
 	@Override
 	public byte[] generateData() throws IOException {
-		ByteArrayOutputStream steam = new ByteArrayOutputStream();
-		steam.write(DEFAULT_TYPE.OPCODE());
-		steam.write(blockNumber());
-		steam.write(fileData, 0, fileData.length);
-		return steam.toByteArray();
+		ByteArrayOutputStream stream = new ByteArrayOutputStream();
+		stream.write(DEFAULT_TYPE.OPCODE());
+		stream.write(blockNumber());
+		stream.write(fileData, 0, fileData.length);
+		return stream.toByteArray();
 	}
 }
