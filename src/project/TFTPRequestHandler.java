@@ -160,8 +160,8 @@ public class TFTPRequestHandler extends Thread {
 				sendFileAlreadyExist(filename + " already exists in server folder!");
 				return;
 			}
-			if (!file.canWrite()) {
-				sendAccessViolation(filename + " cannot be override!");
+			if (!file.getParentFile().canWrite()) { // client has no permission
+				sendAccessViolation(filename + " cannot be modified!");
 				return;
 			}
 			
