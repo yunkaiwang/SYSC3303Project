@@ -160,7 +160,7 @@ public class TFTPRequestHandler extends Thread {
 				sendFileAlreadyExist(filename + " already exists in server folder!");
 				return;
 			}
-			if (!file.getParentFile().canWrite()) { // client has no permission
+			if (!file.getParentFile().canWrite()) { // client has no permission to write the folder
 				sendAccessViolation(filename + " cannot be modified!");
 				return;
 			}
