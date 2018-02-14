@@ -118,4 +118,14 @@ public class TFTPAckPacket extends TFTPPacket {
 		stream.write(blockNumber());
 		return stream.toByteArray();
 	}
+	
+	/**
+	 * Override toString method
+	 */
+	@Override
+	public String toString() {
+		return ("Packet type: " + this.type() + "\nDestination: \n" + "IP address: " +
+	            this.getAddress() + "\nPort: " + this.getPort() + "\nInformation in this packet: " +
+		        "\nBlock number: " + this.getBlockNumber() + "\n");
+	}
 }

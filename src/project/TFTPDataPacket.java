@@ -44,10 +44,9 @@ public class TFTPDataPacket extends TFTPPacket {
 	/**
 	 * Getter
 	 * 
-	 * @return
-	 * @throws IOException
+	 * @return length
 	 */
-	public int getLength() throws IOException {
+	public int getLength() {
 		return fileData.length;
 	}
 
@@ -171,5 +170,12 @@ public class TFTPDataPacket extends TFTPPacket {
 		stream.write(blockNumber());
 		stream.write(fileData, 0, fileData.length);
 		return stream.toByteArray();
+	}
+	
+	public String toString() {
+		return ("Packet type: " + this.type() + "\nDestination: \n" + 
+	            "IP address: " + this.getAddress() + "\nPort: " + this.getPort() +
+	            "\nInformation in this packet: \n" + "Block number: " +
+	            this.getBlockNumber() + "\nData length: " + this.getLength() + "\n");
 	}
 }

@@ -156,4 +156,11 @@ public class TFTPRequestPacket extends TFTPPacket {
 		}
 		return null;
 	}
+	
+	public String toString() {
+		return ("Packet type: " + this.type() + "\nDestination: \n" + 
+	            "IP address: " + this.getAddress() + "\nPort: " + this.getPort() +
+	            "\nInformation in this packet: \n" + "Filename: " + this.getFilename() +
+	            "\nMode: " + this.getMode() + "\n");
+	}
 }

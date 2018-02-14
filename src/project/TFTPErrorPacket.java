@@ -223,4 +223,8 @@ public class TFTPErrorPacket extends TFTPPacket {
 		stream.write(0);
 		return stream.toByteArray();
 	}
+	
+	public String toString() {
+		return "";
+	}
 }

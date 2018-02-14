@@ -112,4 +112,6 @@ public abstract class TFTPPacket {
 		byte[] data = generateData();
 		return new DatagramPacket(data, data.length, address, port);
 	}
+	
+	public abstract String toString();
 }
