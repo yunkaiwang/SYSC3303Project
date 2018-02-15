@@ -4,15 +4,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
+import java.util.Arrays;
 
-public class TFTPAckPacket {
-	private static final Type type = Type.ACK; // default packet type
+public class TFTPAckPacket extends TFTPPacket {
+	private static final Type DEFAULT_TYPE = Type.ACK; // default packet type
 	public static final int PACKET_LENGTH = 4; // length of a Ack packet
 	private static final int MIN_BLOCK_NUMBER = 0; // minimum block number(0)
 	private static final int MAX_BLOCK_NUMBER = 0xffff; // maximum block number(65535)
 	private int blockNumber; // block number of the packet
-	private InetAddress address; // destination address
-	private int port; // destination port
 
 	/**
 	 * Constructor
@@ -22,39 +21,10 @@ public class TFTPAckPacket {
 	 * @param port
 	 */
 	TFTPAckPacket(int blockNumber, InetAddress address, int port) {
+		super(DEFAULT_TYPE, address, port);
 		if (!validBlockNumber(blockNumber))
 			throw new IllegalArgumentException("Invalid block number");
-
 		this.blockNumber = blockNumber;
-		this.address = address;
-		this.port = port;
-	}
-
-	/**
-	 * Getter
-	 * 
-	 * @return address
-	 */
-	public InetAddress getAddress() {
-		return address;
-	}
-
-	/**
-	 * Getter
-	 * 
-	 * @return port
-	 */
-	public int getPort() {
-		return port;
-	}
-
-	/**
-	 * Getter
-	 * 
-	 * @return type
-	 */
-	public String type() {
-		return type.type();
 	}
 
 	/**
@@ -106,7 +76,8 @@ public class TFTPAckPacket {
 	 * @return TFTPAckPacket
 	 */
 	public static TFTPAckPacket createFromPacket(DatagramPacket packet) {
-		return createFromPacketData(packet.getData(), packet.getLength(), packet.getAddress(), packet.getPort());
+		return createFromPacketData(Arrays.copyOfRange(packet.getData(), 0, packet.getLength()), packet.getLength(),
+				packet.getAddress(), packet.getPort());
 	}
 
 	/**
@@ -126,7 +97,7 @@ public class TFTPAckPacket {
 		}
 		// verify op code
 		int OPCODE = ((packetData[0] << 8) & 0xFF00) | (packetData[1] & 0xFF);
-		if (!Type.validOPCODE(type, OPCODE)) {
+		if (!Type.validOPCODE(DEFAULT_TYPE, OPCODE)) {
 			throw new IllegalArgumentException("Invalid OP code");
 		}
 
@@ -140,21 +111,21 @@ public class TFTPAckPacket {
 	 * @return byteArray
 	 * @throws IOException
 	 */
-	public byte[] generateData() throws IOException {
+	@Override
+	protected byte[] generateData() throws IOException {
 		ByteArrayOutputStream stream = new ByteArrayOutputStream();
-		stream.write(type.OPCODE());
+		stream.write(DEFAULT_TYPE.OPCODE());
 		stream.write(blockNumber());
 		return stream.toByteArray();
 	}
-
+	
 	/**
-	 * Create new DatagramPacket from this ack packet
-	 * 
-	 * @return DatagramPacket
-	 * @throws IOException
+	 * Override toString method
 	 */
-	public DatagramPacket createDatagram() throws IOException {
-		byte[] data = generateData();
-		return new DatagramPacket(data, data.length, address, port);
+	@Override
+	public String toString() {
+		return ("Packet type: " + this.type() + "\nDestination: \n" + "IP address: " +
+	            this.getAddress() + "\nPort: " + this.getPort() + "\nInformation in this packet: " +
+		        "\nBlock number: " + this.getBlockNumber() + "\n");
 	}
 }
