@@ -25,6 +25,7 @@ public class TFTPClient {
 	// default folder directory
 	private static final String defaultFolder = System.getProperty("user.dir") + File.separator + "client_files"
 			+ File.separator;
+	
 	DatagramSocket socket;
 	private Mode currentMode; // verbose or quite, in verbose mode, all information will get printed
 	private runningMode currentRunningMode; // test or normal, as described above
