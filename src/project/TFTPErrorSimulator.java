@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 
 /**
  * Please note that for project iteration 1, the error simulator will not do any
@@ -14,8 +13,7 @@ import java.net.UnknownHostException;
  * request-forward, and it should be sufficient for iteration 1, more functions
  * will be added in future development.
  * 
- * @author yunkai wang
- * Last modified on Feb 3, 2018
+ * @author yunkai wang Last modified on Feb 15, 2018
  */
 public class TFTPErrorSimulator {
 	public static final int TFTP_LISTEN_PORT = 23; // default error simulator port
@@ -35,70 +33,83 @@ public class TFTPErrorSimulator {
 	}
 
 	/**
-	 * Check if the given packet is a ACK data packet
-	 * 
-	 * @param packet
-	 * @return true if it is a ACK data packet, false otherwise
-	 */
-	private boolean isAckPacket(DatagramPacket packet) {
-		byte[] data = packet.getData();
-		return data[0] == 0 && data[1] == 4; // OPCODE is 4
-	}
-
-	/**
 	 * Handle read request
 	 * 
 	 * @param packet
-	 * @throws UnknownHostException
 	 * @throws IOException
+	 * @throws TFTPErrorException
 	 */
-	private void handleRRQ(TFTPRequestPacket packet) throws UnknownHostException, IOException {
+	private void handleRRQ(TFTPRequestPacket packet) throws IOException, TFTPErrorException {
 		// form the RRQ packet
 		DatagramPacket sendPacket = new DatagramPacket(packet.getData(), packet.getLength(), packet.getAddress(),
 				TFTPServer.TFTP_LISTEN_PORT);
 		// send the RRQ packet
 		sendReceiveSocket.send(sendPacket);
-		System.out.println("Error simulator has forward the RRQ to the server.");
+		System.out.println("Error simulator has forward the packet to the server.");
 		byte data[];
-		
-		TFTPDataPacket dataPacket;
+
+		TFTPPacket tftppacket;
+		TFTPDataPacket dataPacket = null;
 		do {
-			data = new byte[TFTPServer.MAX_LENGTH]; // clean old byte
+			data = new byte[TFTPPacket.MAX_LENGTH]; // clean old byte
 
 			// form the packet for receiving
 			DatagramPacket receivePacket = new DatagramPacket(data, data.length);
 
 			// receive data packet from server
 			sendReceiveSocket.receive(receivePacket);
-			int serverResponsePort = receivePacket.getPort();
-			System.out.println("Error simulator has received data packet from server.");
 
-			dataPacket = TFTPDataPacket.createFromPacket(receivePacket);
-			
+			int serverResponsePort = receivePacket.getPort();
+			System.out.println("Error simulator has received packet from server.");
+
 			// form the data packet that will be sent to the client
 			sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), packet.getAddress(),
 					packet.getPort());
 
 			// send the data packet
 			sendReceiveSocket.send(sendPacket);
-			System.out.println("Error simulator has forward the data packet to the client.");
+			System.out.println("Error simulator has forward the packet to the client.");
 
-			data = new byte[TFTPAckPacket.PACKET_LENGTH]; // clean old byte
+			// check if error packet is received from the server, if so, abort the connection
+			// expect TFTPDataPacket, if any other packet is received, raise an exception
+			tftppacket = TFTPPacket.createFromPacket(receivePacket);
+			if (!(tftppacket instanceof TFTPDataPacket)) {
+				System.out.println("Error simulator has received error packet from the server.");
+				String errorMsg = (tftppacket instanceof TFTPErrorPacket) ? ((TFTPErrorPacket) tftppacket).getErrorMsg()
+						: "Unknown packet received.";
+
+				// terminate the connection
+				throw new TFTPErrorException(errorMsg);
+			}
+
+			dataPacket = (TFTPDataPacket) tftppacket;
+			data = new byte[TFTPPacket.MAX_LENGTH]; // clean old byte
 
 			// prepare packet for receiving
 			receivePacket = new DatagramPacket(data, data.length);
 
-			// receive the ack packet from client
+			// receive the packet from client
 			sendReceiveSocket.receive(receivePacket);
-			System.out.println("Error simulator has received the ack packet from the client.");
 
-			// prepare the ack packet for sending to the server
+			System.out.println("Error simulator has received the packet from the client.");
+			// prepare the packet for sending to the server
 			sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), packet.getAddress(),
 					serverResponsePort);
 
-			// send the ack packet to the server
+			// send the packet to the server
 			sendReceiveSocket.send(sendPacket);
-			System.out.println("Error simulator has sent the ack packet to the server.");
+			System.out.println("Error simulator has sent the packet to the server.");
+
+			// check if error packet is received from the client, if so, terminate the connection
+			// expect TFTPAckPacket, if any other packet is received, raise an exception
+			tftppacket = TFTPPacket.createFromPacket(receivePacket);
+			if (!(tftppacket instanceof TFTPAckPacket)) {
+				System.out.println("Error simulator has received error packet from the client.");
+				String errorMsg = (tftppacket instanceof TFTPErrorPacket) ? ((TFTPErrorPacket) tftppacket).getErrorMsg()
+						: "Unknown packet received.";
+
+				throw new TFTPErrorException(errorMsg);
+			}
 		} while (!dataPacket.isLastDataPacket());
 	}
 
@@ -106,73 +117,114 @@ public class TFTPErrorSimulator {
 	 * Handle write request
 	 * 
 	 * @param packet
-	 * @throws UnknownHostException
+	 * @throws TFTPErrorException
 	 * @throws IOException
 	 */
-	private void handleWRQ(TFTPRequestPacket packet) throws IOException {
+	private void handleWRQ(TFTPRequestPacket packet) throws IOException, TFTPErrorException {
 		// form the WRQ packet
 		DatagramPacket sendPacket = new DatagramPacket(packet.getData(), packet.getLength(), packet.getAddress(),
 				TFTPServer.TFTP_LISTEN_PORT);
 		// send the WRQ packet
 		sendReceiveSocket.send(sendPacket);
-		System.out.println("Error simulator has forward the WRQ to the server.");
+		System.out.println("Error simulator has forward the packet to the server.");
 
-		byte data[] = new byte[TFTPAckPacket.PACKET_LENGTH];
-		
+		byte data[] = new byte[TFTPPacket.MAX_LENGTH];
+
 		// prepare the packet for receiving
 		DatagramPacket receivePacket = new DatagramPacket(data, data.length);
-		
-		// receive the ack packet
+
+		// receive the packet
 		sendReceiveSocket.receive(receivePacket);
+
+		// remember the server port (the handler's port, not 69)
 		int serverResponsePort = receivePacket.getPort();
-		System.out.println("Error simulator has received ack packet from server.");
+		System.out.println("Error simulator has received packet from server.");
+
+		TFTPPacket tftppacket;
 		TFTPDataPacket dataPacket;
 
-		if (isAckPacket(receivePacket)) {
-			do {
-				// prepare the ack packet to send
-				sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), packet.getAddress(),
-						packet.getPort());
-				
-				// send the ack packet
-				sendReceiveSocket.send(sendPacket);
-				System.out.println("Error simulator has forward the ack packet to the client.");
-
-				data = new byte[TFTPServer.MAX_LENGTH]; // clean old byte
-				
-				// prepare the packet for receiving
-				receivePacket = new DatagramPacket(data, data.length);
-				// receive the data packet from client
-				sendReceiveSocket.receive(receivePacket);
-				System.out.println("Error simulator has received the data packet from the client.");
-
-				dataPacket = TFTPDataPacket.createFromPacket(receivePacket);
-				
-				// prepare the data packet for sending
-				sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), packet.getAddress(),
-						serverResponsePort);
-				
-				// send the data packet to the server
-				sendReceiveSocket.send(sendPacket);
-				System.out.println("Error simulator has sent the data packet to the server.");
-
-				data = new byte[TFTPAckPacket.PACKET_LENGTH]; // clean old byte
-				
-				// prepare the packet for receiving
-				receivePacket = new DatagramPacket(data, data.length);
-				
-				// receive the packet from server
-				sendReceiveSocket.receive(receivePacket);
-				System.out.println("Error simulator has received new ack packet.");
-			} while (!dataPacket.isLastDataPacket());
+		do {
+			// prepare the packet to send
 			sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), packet.getAddress(),
 					packet.getPort());
+
+			// send the packet
 			sendReceiveSocket.send(sendPacket);
-			System.out.println("Error simulator has forward the ack packet to the client.");
-		} else {
-			System.out.println("Error simulator received invalid response, RRQ failed.");
-			return;
-		}
+			System.out.println("Error simulator has forward the packet to the client.");
+
+			// check if error packet is received from server, if so terminate the connection
+			// expect TFTPAckPacket, if any other packet is received, raise an exception
+			tftppacket = TFTPPacket.createFromPacket(receivePacket);
+			if (!(tftppacket instanceof TFTPAckPacket)) {
+				System.out.println("Error simulator has received error packet from the server.");
+				String errorMsg = (tftppacket instanceof TFTPErrorPacket) ? ((TFTPErrorPacket) tftppacket).getErrorMsg()
+						: "Unknown packet received.";
+
+				// terminates the connection
+				throw new TFTPErrorException(errorMsg);
+			}
+
+			data = new byte[TFTPPacket.MAX_LENGTH]; // clean old byte
+
+			// prepare the packet for receiving
+			receivePacket = new DatagramPacket(data, data.length);
+			// receive the packet from client
+			sendReceiveSocket.receive(receivePacket);
+
+			System.out.println("Error simulator has received the packet from the client.");
+
+			// prepare the packet for sending
+			sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), packet.getAddress(),
+					serverResponsePort);
+
+			// send the packet to the server
+			sendReceiveSocket.send(sendPacket);
+			System.out.println("Error simulator has sent the packet to the server.");
+
+			// check if error packet is received from client, if so terminate the connection
+			// expect TFTPDataPacket, if any other packet is received, raise an exception
+			tftppacket = TFTPPacket.createFromPacket(receivePacket);
+			if (!(tftppacket instanceof TFTPDataPacket)) {
+				System.out.println("Error simulator has received error packet from the client.");
+				String errorMsg = (tftppacket instanceof TFTPErrorPacket) ? ((TFTPErrorPacket) tftppacket).getErrorMsg()
+						: "Unknown packet received.";
+
+				// terminates the connection
+				throw new TFTPErrorException(errorMsg);
+			}
+
+			dataPacket = (TFTPDataPacket) tftppacket;
+			data = new byte[TFTPPacket.MAX_LENGTH]; // clean old byte
+
+			// prepare the packet for receiving
+			receivePacket = new DatagramPacket(data, data.length);
+
+			// receive the packet from server
+			sendReceiveSocket.receive(receivePacket);
+
+			// check if error packet is received from server, if so terminate the connection
+			// expect TFTPAckPacket, if any other packet is received, raise an exception
+			tftppacket = TFTPPacket.createFromPacket(receivePacket);
+			if (!(tftppacket instanceof TFTPAckPacket)) {
+				System.out.println("Error simulator has received error packet from the server.");
+
+				String errorMsg = (tftppacket instanceof TFTPErrorPacket) ? ((TFTPErrorPacket) tftppacket).getErrorMsg()
+						: "Unknown packet received.";
+
+				sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), packet.getAddress(),
+						packet.getPort());
+				sendReceiveSocket.send(sendPacket);
+				System.out.println("Error simulator has forward the error packet to the client.");
+
+				// terminates the connection
+				throw new TFTPErrorException(errorMsg);
+			}
+
+		} while (!dataPacket.isLastDataPacket());
+		sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), packet.getAddress(),
+				packet.getPort());
+		sendReceiveSocket.send(sendPacket);
+		System.out.println("Error simulator has forward the packet to the client.");
 	}
 
 	/**
@@ -180,7 +232,7 @@ public class TFTPErrorSimulator {
 	 */
 	public void waitForRequest() {
 		for (;;) { // run forever
-			byte data[] = new byte[TFTPServer.MAX_LENGTH];
+			byte data[] = new byte[TFTPPacket.MAX_LENGTH];
 			DatagramPacket packet = new DatagramPacket(data, data.length);
 			System.out.println("Error simulator is waiting for new requests.");
 
@@ -188,15 +240,9 @@ public class TFTPErrorSimulator {
 				// received a new request
 				receiveSocket.receive(packet);
 				System.out.println("Error simulator received new requests.");
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.exit(1);
-			}
+				// create the request packet from the packet received from the client
+				TFTPRequestPacket requestPacket = TFTPRequestPacket.createFromPacket(packet);
 
-			// create the request packet from the packet received from the client
-			TFTPRequestPacket requestPacket = TFTPRequestPacket.createFromPacket(packet);
-
-			try {
 				if (requestPacket.isReadRequest()) {
 					handleRRQ(requestPacket);
 				} else if (requestPacket.isWriteRequest()) {
@@ -204,10 +250,12 @@ public class TFTPErrorSimulator {
 				} else {
 					System.out.println("Error simulator have received an invalid request.");
 				}
-			} catch (UnknownHostException e) {
-				e.printStackTrace();
 			} catch (IOException e) {
 				e.printStackTrace();
+				System.exit(1);
+			} catch (TFTPErrorException e) {
+				System.out
+						.println("Connection is aborted as the following error message is received: " + e.getMessage());
 			}
 		}
 	}
