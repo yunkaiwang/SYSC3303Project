@@ -88,66 +88,17 @@ public class TFTPServer {
 	}
 	
 	/**
-	 * Print information stored in TFTPRequestPacket
+	 * Print information stored in TFTPPacket
 	 * 
 	 * @param packet
 	 * @throws IOException
 	 */
-	public void printInformation(TFTPRequestPacket packet) throws IOException {
+	public void printInformation(TFTPPacket packet) throws IOException {
 		switch (this.currentMode) {
 		case QUITE: // don't print detailed information in QUITE mode
 			return;
 		case VERBOSE:
-			System.out.println("Packet type: " + packet.type());
-			System.out.println("Destination: ");
-			System.out.println("IP address: " + packet.getAddress());
-			System.out.println("Port: " + packet.getPort());
-			System.out.println("Information in this packet: ");
-			System.out.println("Filename: " + packet.getFilename());
-			System.out.println("Mode: " + packet.getMode() + "\n");
-			return;
-		}
-	}
-	
-	/**
-	 * Print information stored in TFTPDataPacket
-	 * 
-	 * @param packet
-	 * @throws IOException
-	 */
-	public void printInformation(TFTPDataPacket packet) throws IOException {
-		switch (this.currentMode) {
-		case QUITE: // don't print detailed information in QUITE mode
-			return;
-		case VERBOSE:
-			System.out.println("Packet type: " + packet.type());
-			System.out.println("Destination: ");
-			System.out.println("IP address: " + packet.getAddress());
-			System.out.println("Port: " + packet.getPort());
-			System.out.println("Information in this packet: ");
-			System.out.println("Block number: " + packet.getBlockNumber());
-			System.out.println("Data length: " + packet.getLength() + "\n");
-			return;
-		}
-	}
-	
-	/**
-	 * Print information stored in TFTPAckPacket
-	 * 
-	 * @param packet
-	 * @throws IOException
-	 */
-	public void printInformation(TFTPAckPacket packet) throws IOException {
-		switch (this.currentMode) {
-		case QUITE: // don't print detailed information in QUITE mode
-			return;
-		case VERBOSE:
-			System.out.println("Packet type: " + packet.type());
-			System.out.println("Destination: ");
-			System.out.println("IP address: " + packet.getAddress());
-			System.out.println("Port: " + packet.getPort());
-			System.out.println("Information in this packet: ");
-			System.out.println("Block number: " + packet.getBlockNumber() + "\n");
+			System.out.println(packet);
 			return;
 		}
 	}

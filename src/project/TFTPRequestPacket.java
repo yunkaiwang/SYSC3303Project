@@ -4,15 +4,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
+import java.util.Arrays;
 
-public class TFTPRequestPacket {
-	private final Type type; // packet type (RRQ or WRQ)
+public class TFTPRequestPacket extends TFTPPacket {
 	private static final String mode = "octet"; // default mode (as described in the project description, it doesn't
 												// matter
 												// whether the mode is netascii or octet)
 	private String filename; // filename in this packet
-	private InetAddress address; // destination address
-	private int port; // destination port
 
 	/**
 	 * Constructor
@@ -23,10 +21,8 @@ public class TFTPRequestPacket {
 	 * @param port
 	 */
 	private TFTPRequestPacket(String filename, Type type, InetAddress address, int port) {
+		super(type, address, port);
 		this.filename = filename;
-		this.type = type;
-		this.address = address;
-		this.port = port;
 	}
 
 	/**
@@ -35,7 +31,7 @@ public class TFTPRequestPacket {
 	 * @return true is the packet is a read request, false otherwise
 	 */
 	public boolean isReadRequest() {
-		return this.type == Type.RRQ;
+		return this.type() == Type.RRQ;
 	}
 	
 	/**
@@ -44,11 +40,7 @@ public class TFTPRequestPacket {
 	 * @return true is the packet is a write request, false otherwise
 	 */
 	public boolean isWriteRequest() {
-		return this.type == Type.WRQ;
-	}
-	
-	public byte[] getData() throws IOException {
-		return generateData();
+		return this.type() == Type.WRQ;
 	}
 	
 	/**
@@ -57,9 +49,9 @@ public class TFTPRequestPacket {
 	 * @return byteArray
 	 * @throws IOException
 	 */
-	private byte[] generateData() throws IOException {
+	protected byte[] generateData() throws IOException {
 		ByteArrayOutputStream steam = new ByteArrayOutputStream();
-		steam.write(type.OPCODE());
+		steam.write(type().OPCODE());
 		byte[] filenameInByte = filename.getBytes();
 		steam.write(filenameInByte, 0, filenameInByte.length);
 		steam.write(0);
@@ -72,38 +64,11 @@ public class TFTPRequestPacket {
 	/**
 	 * Getter
 	 * 
-	 * @return address
-	 */
-	public InetAddress getAddress() {
-		return address;
-	}
-
-	/**
-	 * Getter
-	 * 
-	 * @return port
-	 */
-	public int getPort() {
-		return port;
-	}
-
-	/**
-	 * Getter
-	 * 
 	 * @return dataLength
 	 * @throws IOException
 	 */
 	public int getLength() throws IOException {
 		return generateData().length;
-	}
-
-	/**
-	 * Getter
-	 * 
-	 * @return type
-	 */
-	public String type() {
-		return type.type();
 	}
 
 	/**
@@ -155,7 +120,8 @@ public class TFTPRequestPacket {
 	 * @throws IOException
 	 */
 	public static TFTPRequestPacket createFromPacket(DatagramPacket packet) {
-		return createFromPacketData(packet.getData(), packet.getLength(), packet.getAddress(), packet.getPort());
+		return createFromPacketData(Arrays.copyOfRange(packet.getData(), 0, packet.getLength()), packet.getLength(),
+				packet.getAddress(), packet.getPort());
 	}
 
 	/**
@@ -190,15 +156,11 @@ public class TFTPRequestPacket {
 		}
 		return null;
 	}
-
-	/**
-	 * Create new DatagramPacket from this packet
-	 * 
-	 * @return DatagramPacket
-	 * @throws IOException
-	 */
-	public DatagramPacket createDatagram() throws IOException {
-		byte[] data = generateData();
-		return new DatagramPacket(data, data.length, address, port);
+	
+	public String toString() {
+		return ("Packet type: " + this.type() + "\nDestination: \n" + 
+	            "IP address: " + this.getAddress() + "\nPort: " + this.getPort() +
+	            "\nInformation in this packet: \n" + "Filename: " + this.getFilename() +
+	            "\nMode: " + this.getMode() + "\n");
 	}
 }
