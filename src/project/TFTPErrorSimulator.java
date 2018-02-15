@@ -18,7 +18,7 @@ import java.net.UnknownHostException;
  * Last modified on Feb 3, 2018
  */
 public class TFTPErrorSimulator {
-	public static final int TFTP_LISTEN_PORT = 23; // default error simulator port
+	public static final int TFTP_LISTEN_PORT = 2300; // default error simulator port
 	DatagramSocket receiveSocket, sendReceiveSocket;
 
 	/**

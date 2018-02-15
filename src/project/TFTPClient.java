@@ -21,8 +21,8 @@ public class TFTPClient {
 		test, normal;
 	}
 	
-	private static final int DEFAULT_SERVER_PORT = 69; // default server port
-	private static final int DEFAULT_ERROR_SIMULATOR_PORT = 23; // default error simulator port
+	private static final int DEFAULT_SERVER_PORT = 6900; // default server port
+	private static final int DEFAULT_ERROR_SIMULATOR_PORT = 2300; // default error simulator port
 	// default folder location
 	private static final String defaultFolder = System.getProperty("user.dir") + File.separator + "client_files" + File.separator;
 	DatagramSocket socket;
