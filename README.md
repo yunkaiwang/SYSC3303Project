@@ -55,20 +55,6 @@ Testing step:
 	5. if you want to change the printing mode in server, in the server terminal, type 'switch'.
 	
 Explaining the names of files:
-	 - Mode.java - enum class for printing mode (verbose/quite)
-	 - TFTPAckPacket.java - TFTP ack packet class
-	 - TFTPClient.java - TFTP client
-	 - TFTPDataPacket.java - TFTP data packet class
-	 - TFTPErrorPacket.java - TFTP error packet class
-	 - TFTPErrorSimulator.java - TFTP error simulator
-	 - TFTPRequestHandler.java - Request handler thread that will be used by the server
-	 - TFTPRequestListner.java - Request listener thread that will be used by the server
-	 - TFTPRequestPacket.java - TFTP RRQ/WRQ packet class
-	 - TFTPServer.java - TFTP server
-	 - ThreadLog.java - Helper class for all different threads to print information
-	 - Type.java - TFTP request types(WRQ, RRQ, .. etc)
- 
-
 	- TFTPPacket.java - abstract class for all TFTP packets which defined several common functions
 	- TFTPAckPacket.java - class for TFTPAckPacket
 	- TFTPDataPacket.java - class for TFTPDataPacket
@@ -84,17 +70,44 @@ Explaining the names of files:
 	                            by TFTP request listener thread
 	- TFTPErrorSimulator.java - Used for simulating error, not used in iteration 2, for now it will just receive a packet and forward
 	                            the packet without touching the packet
-	- Type.java - enum class for current printing mode (quite or verbose)
-
+	- Mode.java - enum class for current printing mode (quite or verbose)
+	- Type.java - enum class for all different types of TFTP requests (WRQ, RRQ, DATA, ACK, ERROR)
 	- ThreadLog.java - Helper class for all different threads to print information
 
  Breakdown of responsibilities:
  	- Yunkai Wang: most of the coding work
  	- Qingyi Yin: TFTPAckPacket class and all diagrams/documents
  	
+Tips for testing iteration 2:
+	- if you want to test fileNotFound error, simply send a RRQ with a file that doesn't exist in the server's folder
+	- if you want to test fileAlreadyExist error, simply send a WRQ with a file that already exist in the server's folder
+	- if you want to test AccessViolation for RRQ, change the permission so that the file cannot be read, then send the RRQ
+	  with that file
+	- if you want to test AccessViolation for WRQ, change the permission of the server's folder so that it cannot be modified,
+	  then send a WRQ with any file that exist in the client's folder
+	- if you want to test diskFull for RRQ
+		- one option is to test on a USB whose memory is almost full, and read a large test file from server
+		- the second option is that in TFTPClient.java, line 405 to line 414 checks if the disk is full by calling the
+		  funtion getFreeSpace(), you can add a line "freeSpace = 0" on line 406, which is sending a fake message to the
+		  system saying that the disk is full, and a diskFull error will be sent. This is easier to be tested, but be
+		  sure to remove the line "freeSpace = 0" after testing, otherwise the WRQ will always fail
+	- if you want to test diskFull for WRQ
+		- same as above, test on a USB, and write a large test file to server
+		- similar to above, in TFTPRequestHandler, line 200 - line 209 also checks if the disk is full by calling the
+		  the function getFreeSpace(), to fake a disk full exception, add "freeSpace = 0" on line 201, and the system
+		  will always send a DiskFull exception for WRQ. Deleting the line that you just added will make the sytem work
+		  again
+
  Diagrams:
  	All the diagrams are in the diagram folder.
- 	- uml-class-diagram: class diagram of this application
+ 	- uml: class diagram of this system
  	- ucm-rrq: UCM for read request
  	- ucm-wrq: UCM for write request
+	- fileNotFound-RRQ: timing diagram for file not found during RRQ
+	- fileNotFound-WRQ: timing diagram for file not found during WRQ
+	- accessViolation-RRQ: timing diagram for access violation during RRQ
+	- accessViolation-WRQ: timing diagram for access violation during WRQ
+	- diskFull-RRQ: timing diagram for disk full during RRQ
+	- diskFull-WRQ: timing diagram for disk full during WRQ
+	- fileAlreadyExists - timing diagram for file already exists (only happends during WRQ)
  
