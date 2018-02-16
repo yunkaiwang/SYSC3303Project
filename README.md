@@ -10,25 +10,33 @@ Set up test files:
 Set up environment:
 	Step1: Go to TFTPClient then click run.
 	Step2: Go to TFTPServer then click run.
-	Step3: Go to TFTPErrorSimulator then click run(if you want to use the error simulator).
+	Step3: Go to TFTPErrorSimulator then click run.
 
 Instruction of using TFTP:
 	TFTPClient:
-		1. menu   ---> if you want to see the menu, type "menu" then press enter
-		2. exit   ---> if you want to stop the client and exit, type "exit" press enter
-		3. mode   ---> if you want to see the current mode, type "mode" then press enter
-		4. switch ---> if you want to switch mode(verbose, quite, normal, or test), type "switch" then press enter
-		5. reset  ---> if you want to reset running mode(test or normal), type "reset" then press enter
-		6. read   ---> if you want to read a file from server, type "read test.txt" then press enter
-		7. write  ---> if you want to write a file to server, type "write test.txt" then press enter
+		- menu   ---> if you want to see the menu, type "menu" then press enter
+		- exit   ---> if you want to stop the client and exit, type "exit" press enter
+		- mode   ---> if you want to see the current mode, type "mode" then press enter
+		- switch ---> if you want to switch mode(verbose, quite, normal, or test), type "switch" then press enter
+		- reset  ---> if you want to reset running mode(test or normal), type "reset" then press enter
+		- read   ---> if you want to read a file from server, type "read <filename>" then press enter
+		- write  ---> if you want to write a file to server, type "write <filename>" then press enter
+                - la     ---> if you want to see all the files under current directory, type "la" then press ente
+		- pwd/dir---> if you want to see current directory path, type "pwd" or "dir" then press enter
+		- cd     ---> if you want to check the directory path, type "cd <path>" then press enter
 	TFTPServer:
-		1. menu   ---> if you want to see the menu, type "menu" then press enter
-		2. exit   ---> if you want to stop the client and exit, type "exit" press enter
-		3. mode   ---> if you want to see the current mode, type "mode" then press enter
-		4. switch ---> if you want to switch mode(verbose, quite, normal, or test), type "switch" then press enter
+		- menu   ---> if you want to see the menu, type "menu" then press enter
+		- exit   ---> if you want to stop the client and exit, type "exit" press enter
+		- mode   ---> if you want to see the current mode, type "mode" then press enter
+		- switch ---> if you want to switch mode(verbose, quite, normal, or test), type "switch" then press enter
+		- count  ---> if you want to see current number of running threads, type "count" then press enter
+		- la     ---> if you want to see all the files under current directory, type "la" then press ente
+		- pwd/dir---> if you want to see current directory path, type "pwd" or "dir" then press enter
+		- cd     ---> if you want to check the directory path, type "cd <path>" then press enter 
 	TFTPErrorSimulator:
-		For iteration 1, the error simulator doesn't support any command, it will just wait for a new request from
-		the client, and forward the request to the server, forward the request from the server to the client, etc.
+		For iteration 2, the error simulator doesn't support any command, it will just wait for a new request from
+		the client, and forward the request to the server, forward the request from the server to the client, it will
+		not touch any information stored in the packet.
 		
 Testing step:
 	1. follow the instructions in set up environment to start all the applications
