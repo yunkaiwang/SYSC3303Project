@@ -11,11 +11,10 @@ public class TFTPServer {
 	private Mode currentMode; // verbose or quite
 	private int numThread; // number of threads that are currently going
 	private TFTPRequestListener requestListener; // request listener
-	// default folder
-	private String DEFAULT_FOLDER = System.getProperty("user.dir") + File.separator +
-			"server_files" + File.separator;
+	private String DEFAULT_FOLDER = System.getProperty("user.dir") +
+			File.separator + "server_files" + File.separator; // default folder location
 	private String folder = DEFAULT_FOLDER; // current folder
-	
+
 	/**
 	 * Constructor
 	 */
@@ -50,7 +49,7 @@ public class TFTPServer {
 	synchronized public int getNumThread() {
 		return numThread;
 	}
-	
+
 	/**
 	 * Create new request handler thread
 	 * 
@@ -62,7 +61,7 @@ public class TFTPServer {
 	public TFTPRequestHandler createNewRequestHandler(DatagramPacket packet, InetAddress address, int port) {
 		return new TFTPRequestHandler(this, packet, address, port);
 	}
-	
+
 	/**
 	 * Getter
 	 * 
@@ -71,20 +70,22 @@ public class TFTPServer {
 	public Mode getMode() {
 		return currentMode;
 	}
-	
+
 	/**
 	 * Print the menu
 	 */
 	private static void printMenu() {
-		System.out.println("Available commands:");
-		System.out.println("1. menu - show the menu");
-		System.out.println("2. exit - stop the client");
-		System.out.println("3. mode - show current mode");
-		System.out.println("4. switch - switch mode");
-		System.out.println("5. count - number of threads that are running");
-		System.out.println();
+		System.out.println("Available commands:\n"
+	            + "  menu        - show the menu\n"
+				+ "  exit        - stop the client\n"
+	            + "  mode        - show current mode\n"
+				+ "  switch      - switch mode\n"
+	            + "  count       - number of threads that are running\n"
+				+ "  dir/pwd     - current directory\n"
+	            + "  la          - list of files under current directory\n"
+				+ "  cd <folder> - change directory, new directoly location should be written using /(i.e. ../new_client/)\n");
 	}
-	
+
 	/**
 	 * Print information stored in TFTPPacket
 	 * 
@@ -95,12 +96,12 @@ public class TFTPServer {
 		switch (this.currentMode) {
 		case QUITE: // don't print detailed information in QUITE mode
 			return;
-		case VERBOSE:
+		case VERBOSE: // print detailed information in VERBOSE mode
 			System.out.println(packet);
 			return;
 		}
 	}
-	
+
 	/**
 	 * Terminate the server
 	 */
@@ -115,7 +116,7 @@ public class TFTPServer {
 
 		System.out.println("Terminating server.");
 	}
-	
+
 	/**
 	 * Switch the printing mode(verbose/quite)
 	 */
@@ -123,21 +124,73 @@ public class TFTPServer {
 		this.currentMode = currentMode.switchMode();
 		System.out.println("The mode has been switched to " + this.currentMode + "\n");
 	}
-	
+
 	/**
 	 * Print current printing mode(verbose/quite)
 	 */
 	private void printMode() {
 		System.out.println("Current mode is: " + currentMode.mode());
 	}
-	
+
 	/**
 	 * Print the number of threads that are running
 	 */
 	private void printCount() {
 		System.out.println("Current number of threads is: " + getNumThread());
 	}
-	
+
+	/**
+	 * Switch the directory to a new path
+	 * 
+	 * @param newDirectoryPath
+	 */
+	private void switchDirectory(String newDirectoryPath) {
+		String prevFolder = this.getFolder(); // previous directory path. used for restoring directory path
+		String[] directoryPath = newDirectoryPath.split("/");
+		for (String dir : directoryPath) {
+			if (dir.length() == 0)
+				continue;
+			else if (dir.equals("..")) {
+				if (this.folder.indexOf(File.separator) != -1) {
+					this.setFolder(this.folder.substring(0,
+							this.folder.substring(0, this.folder.length() - 1).lastIndexOf(File.separator))
+							+ File.separator);
+				} else {
+					System.out.println("New directory path is invalid, please try again.\n");
+					this.setFolder(prevFolder); // restore directory path
+				}
+			} else {
+				this.setFolder(this.getFolder() + dir + File.separator);
+				File path = new File(this.folder);
+				if (!path.exists()) {
+					System.out.println("New directory path is invalid, please try again.\n");
+					this.setFolder(prevFolder); // restore directory path
+				}
+			}
+		}
+	}
+
+	/**
+	 * Setter
+	 * 
+	 * @return folder
+	 */
+	private void setFolder(String newFolder) {
+		this.folder = newFolder;
+	}
+
+	/**
+	 * Print the list of files under current folder
+	 */
+	private void printListFiles() {
+		File folder = new File(this.getFolder());
+		File[] listOfFiles = folder.listFiles();
+
+		for (File file : listOfFiles)
+			System.out.println(file.getName());
+		System.out.println();
+	}
+
 	/**
 	 * Getter
 	 * 
@@ -146,7 +199,7 @@ public class TFTPServer {
 	private String getFolder() {
 		return folder;
 	}
-	
+
 	/**
 	 * Create the file path by combining the folder location and filename
 	 * 
@@ -156,7 +209,14 @@ public class TFTPServer {
 	public String getFilePath(String filename) {
 		return getFolder() + filename;
 	}
-	
+
+	/**
+	 * Print current directory
+	 */
+	private void printDirectory() {
+		System.out.println("Current directory is: " + this.getFolder() + "\n");
+	}
+
 	/**
 	 * Main loop of this file, wait for new requests
 	 */
@@ -166,8 +226,11 @@ public class TFTPServer {
 		printMenu();
 		while (true) {
 			System.out.print("Command: ");
-			String cmdLine = s.nextLine().toLowerCase();
-			switch (cmdLine) {
+			String[] commands = s.nextLine().split("\\s+"); // split all command into array of command
+			if (commands.length == 0)
+				continue;
+
+			switch (commands[0].toLowerCase()) {
 			case "menu":
 				printMenu();
 				continue;
@@ -184,6 +247,16 @@ public class TFTPServer {
 			case "count":
 				this.printCount();
 				continue;
+			case "pwd":
+			case "dir":
+				printDirectory();
+				continue;
+			case "la":
+				printListFiles();
+				continue;
+			case "cd":
+				switchDirectory(commands[1]);
+				continue;
 			default:
 				System.out.println("Invalid command, please try again!\n");
 				System.out.println("These are the available commands:");
@@ -199,7 +272,7 @@ public class TFTPServer {
 	 * @return true is the given packet data is a read request, false otherwise
 	 */
 	public boolean isReadRequest(byte[] data) {
-		return data != null && data[1] == 1; // RRQ should have a OPCODE 1
+		return data != null && data[0] == 0 && data[1] == 1; // RRQ should have a OPCODE 1
 	}
 
 	/**
@@ -209,9 +282,9 @@ public class TFTPServer {
 	 * @return true is the given packet data is a write request, false otherwise
 	 */
 	public boolean isWriteRequest(byte[] data) {
-		return data != null && data[1] == 2; // RRQ should have a OPCODE 2
+		return data != null && data[0] == 0 &&data[1] == 2; // RRQ should have a OPCODE 2
 	}
-	
+
 	public static void main(String[] args) {
 		TFTPServer server = new TFTPServer();
 		server.waitForCommand();

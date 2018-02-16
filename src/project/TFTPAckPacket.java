@@ -6,6 +6,12 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.util.Arrays;
 
+/**
+ * TFTPAckPacket class
+ * 
+ * @author Qingyi Yin
+ *
+ */
 public class TFTPAckPacket extends TFTPPacket {
 	private static final Type DEFAULT_TYPE = Type.ACK; // default packet type
 	public static final int PACKET_LENGTH = 4; // length of a Ack packet
