@@ -95,4 +95,3 @@ Tips for testing iteration 2:
 	- diskFull-RRQ: timing diagram for disk full during RRQ  
 	- diskFull-WRQ: timing diagram for disk full during WRQ  
 	- fileAlreadyExists - timing diagram for file already exists (only happends during WRQ)  
- 
