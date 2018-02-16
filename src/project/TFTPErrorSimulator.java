@@ -6,12 +6,8 @@ import java.net.DatagramSocket;
 import java.net.SocketException;
 
 /**
- * Please note that for project iteration 1, the error simulator will not do any
- * actual work, it will just receive an request from client, and forward the
- * request to the server, receive the response and return the response back to
- * the client. This class currently only contains one function which does the
- * request-forward, and it should be sufficient for iteration 1, more functions
- * will be added in future development.
+ * For iteration 2, the error simulator will not touch any of the packets
+ * received, it will just forward all those packets.
  * 
  * @author yunkai wang Last modified on Feb 15, 2018
  */
@@ -255,7 +251,7 @@ public class TFTPErrorSimulator {
 				System.exit(1);
 			} catch (TFTPErrorException e) {
 				System.out
-						.println("Connection is aborted as the following error message is received: " + e.getMessage());
+						.println("Connection is aborted as the following error message is received:\n" + e.getMessage());
 			}
 		}
 	}

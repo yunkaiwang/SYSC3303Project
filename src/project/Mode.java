@@ -1,5 +1,11 @@
 package project;
 
+/**
+ * Enum for printing mode
+ * 
+ * @author yunkai wang
+ *
+ */
 public enum Mode {
 	QUITE("QUITE"),
 	VERBOSE("VERBOSE");

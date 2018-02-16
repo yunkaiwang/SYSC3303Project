@@ -5,6 +5,13 @@ import java.net.DatagramSocket;
 import java.net.DatagramPacket;
 import java.net.SocketException;
 
+/**
+ * Request listener class that will listen on the given port for new requests, and
+ * create new request handler thread for handling the request
+ * 
+ * @author yunkai wang
+ *
+ */
 public class TFTPRequestListener extends Thread {
 	private TFTPServer server; // server that this listener is working for
 	private int port; // port that it will be listening on
@@ -14,23 +21,36 @@ public class TFTPRequestListener extends Thread {
 	private boolean acceptNewConnection;
 	private DatagramSocket socket;
 	
+	/**
+	 * Constructor
+	 * 
+	 * @param server
+	 * @param port
+	 */
 	TFTPRequestListener(TFTPServer server, int port) {
 		this.server = server;
 		this.port = port;
 		this.acceptNewConnection = true;
 	}
 	
+	/**
+	 * Request the request listener to step
+	 */
 	protected void stopRequestListener() {
 		this.acceptNewConnection = false;
 		socket.close(); // close socket as it will not be used any more
 	}
 	
+	/**
+	 * Override run method
+	 */
 	@Override
 	public void run() {
 		server.incrementNumThread(); // request listen is one thread of the server
 		ThreadLog.print("Request listener is waiting for new requests");
 		try {
-			socket = new DatagramSocket(port);
+			socket = new DatagramSocket(port); // create the socket to listener to listen on the
+			                                   // port given by the server
 		} catch (SocketException se) { // failed to bound the port
 			se.printStackTrace();
 			System.exit(1);
@@ -40,6 +60,7 @@ public class TFTPRequestListener extends Thread {
 			// create new packet for receiving new requests
 			DatagramPacket packet = new DatagramPacket(new byte[TFTPPacket.MAX_LENGTH], TFTPPacket.MAX_LENGTH);
 			try {
+				// a new packet is received
 				socket.receive(packet);
 				// only handle RRQ or WRQ at this moment, ignore all other requests received
 				if (server.isReadRequest(packet.getData()) || server.isWriteRequest(packet.getData())) {
@@ -56,7 +77,7 @@ public class TFTPRequestListener extends Thread {
 			}
 		}
 		
-		socket.disconnect(); // close the socket
+		socket.disconnect(); // disconnect the socket
 		server.decrementNumThread(); // decrease the thread count in server
 	}
 	

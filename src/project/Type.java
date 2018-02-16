@@ -2,8 +2,13 @@ package project;
 
 import java.io.ByteArrayOutputStream;
 
+/**
+ * Enum class that represent different TFTP packet type
+ * 
+ * @author yunkai wang
+ *
+ */
 public enum Type {
-	// represent different type of TFTP packet
 	RRQ(1, "RRQ"),
 	WRQ(2, "WRQ"),
 	DATA(3, "DATA"),

@@ -7,14 +7,17 @@ import java.net.InetAddress;
 import java.util.Arrays;
 
 /**
- * 
- * please note that for project iteration 1, no TFTP ERROR packet will be
- * prepared/transmitted/ received/handled, so this class is not used in any
- * other classes, and the class doesn't contain all the functions that it needs,
- * we are just defining a few functions that we think are important in this
- * class. More functions will be added in later iterations.
- * 
- * @author yunkai wang Last modified on Feb 11, 2018
+ * TFTPErrorPacket class, for iteration 2, TFTPErrorPacket class is used
+ * when the following errors happen
+ *  - client send RRQ, but the file not exist on server (fileNotExist)
+ *  - client send RRQ, but the client has no permission to read the file (accessViolation)
+ *  - client send RRQ, during the file transfer, client's disk become full (diskFull)
+ *  - client send WRQ, but the file already exist on server (fileAlreadyExist)
+ *  - client send WRQ, but the client has no permission to write to the folder (accessViolation)
+ *  - client send WRQ, during the file transfer, server's disk become full (diskFull)
+ *  In any of the cases above, a TFTPErrorPacket is sent.
+ *  
+ * @author yunkai wang Last modified on Feb 15, 2018
  */
 public class TFTPErrorPacket extends TFTPPacket {
 	private static final Type DEFAULT_TYPE = Type.ERROR; // default packet type
@@ -136,7 +139,6 @@ public class TFTPErrorPacket extends TFTPPacket {
 		return new TFTPErrorPacket(6, msg, address, port);
 	}
 
-	
 	/**
 	 * Getter
 	 * 
@@ -224,7 +226,14 @@ public class TFTPErrorPacket extends TFTPPacket {
 		return stream.toByteArray();
 	}
 	
+	/**
+	 * toString method
+	 */
+	@Override
 	public String toString() {
-		return "";
+		return ("Packet type: " + this.type() + "\nDestination: \n" + 
+	            "IP address: " + this.getAddress() + "\nPort: " + this.getPort() +
+	            "\nInformation in this packet: \n" + "Error code: " +
+	            this.getErrorCode() + "\nError message: " + this.getErrorMsg() + "\n");
 	}
 }

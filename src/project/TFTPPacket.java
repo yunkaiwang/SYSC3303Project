@@ -5,13 +5,26 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.util.Arrays;
 
+/**
+ * Abstract parent class for all TFTPPackets
+ * 
+ * @author yunkai wang
+ *
+ */
 public abstract class TFTPPacket {
 	public static final int MAX_LENGTH = 516; // max packet data length (complete data packet)
 	public static final int MIN_LENGTH = 4; // min packet data length (ack packet)
-	private final Type type;
+	private final Type type; // type
 	private InetAddress address; // destination address
 	private int port; // destination port
 
+	/**
+	 * Constructor, can only be accessed using child classes
+	 * 
+	 * @param type
+	 * @param address
+	 * @param port
+	 */
 	protected TFTPPacket(Type type, InetAddress address, int port) {
 		this.type = type;
 		this.address = address;
@@ -113,5 +126,8 @@ public abstract class TFTPPacket {
 		return new DatagramPacket(data, data.length, address, port);
 	}
 	
+	/**
+	 * require all TFTPPacket classes to provide toString function
+	 */
 	public abstract String toString();
 }

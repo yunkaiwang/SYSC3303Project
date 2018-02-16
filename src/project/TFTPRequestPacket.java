@@ -6,10 +6,15 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.util.Arrays;
 
+/**
+ * TFTPRequestPacket, can be a RRQ or a WRQ
+ * 
+ * @author yunkai wang
+ *
+ */
 public class TFTPRequestPacket extends TFTPPacket {
 	private static final String mode = "octet"; // default mode (as described in the project description, it doesn't
-												// matter
-												// whether the mode is netascii or octet)
+												// matter whether the mode is netascii or octet)
 	private String filename; // filename in this packet
 
 	/**
@@ -44,7 +49,7 @@ public class TFTPRequestPacket extends TFTPPacket {
 	}
 	
 	/**
-	 * Generate the byte array that contains all information
+	 * Generate the byte array that contains all information in the packet
 	 * 
 	 * @return byteArray
 	 * @throws IOException
@@ -157,6 +162,10 @@ public class TFTPRequestPacket extends TFTPPacket {
 		return null;
 	}
 	
+	/**
+	 * toString method, used for printing
+	 */
+	@Override
 	public String toString() {
 		return ("Packet type: " + this.type() + "\nDestination: \n" + 
 	            "IP address: " + this.getAddress() + "\nPort: " + this.getPort() +

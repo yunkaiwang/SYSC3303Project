@@ -6,6 +6,12 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.util.Arrays;
 
+/**
+ * TFTPDataPacket class
+ * 
+ * @author yunkai wang
+ *
+ */
 public class TFTPDataPacket extends TFTPPacket {
 	private static final Type DEFAULT_TYPE = Type.DATA; // default packet type
 	private static final int HEADER_LENGTH = 4; // packet header length
@@ -172,6 +178,10 @@ public class TFTPDataPacket extends TFTPPacket {
 		return stream.toByteArray();
 	}
 	
+	/**
+	 * toString method
+	 */
+	@Override
 	public String toString() {
 		return ("Packet type: " + this.type() + "\nDestination: \n" + 
 	            "IP address: " + this.getAddress() + "\nPort: " + this.getPort() +

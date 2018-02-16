@@ -10,7 +10,7 @@ Set up test files:
 Set up environment:
 	Step1: Go to TFTPClient then click run.
 	Step2: Go to TFTPServer then click run.
-	Step3: Go to TFTPErrorSimulator then click run.
+	Step3: Go to TFTPErrorSimulator then click run(if you want to use the error simulator).
 
 Instruction of using TFTP:
 	TFTPClient:
