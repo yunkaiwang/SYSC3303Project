@@ -8,8 +8,6 @@ import java.util.Scanner;
 
 public class TFTPServer {
 	public static final int TFTP_LISTEN_PORT = 69; // default port
-	public static final int MAX_LENGTH = 516; // maximum packet length
-	public static final int MIN_LENGTH = 4; // minimum packet length
 	private Mode currentMode; // verbose or quite
 	private int numThread; // number of threads that are currently going
 	private TFTPRequestListener requestListener; // request listener

@@ -38,7 +38,7 @@ public class TFTPRequestListener extends Thread {
 		
 		while (acceptNewConnection) { // keep waiting for new connection
 			// create new packet for receiving new requests
-			DatagramPacket packet = new DatagramPacket(new byte[TFTPServer.MAX_LENGTH], TFTPServer.MAX_LENGTH);
+			DatagramPacket packet = new DatagramPacket(new byte[TFTPPacket.MAX_LENGTH], TFTPPacket.MAX_LENGTH);
 			try {
 				socket.receive(packet);
 				// only handle RRQ or WRQ at this moment, ignore all other requests received
