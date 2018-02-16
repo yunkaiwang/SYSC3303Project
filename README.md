@@ -59,7 +59,7 @@ Explaining the names of files:
 	 - TFTPAckPacket.java - TFTP ack packet class
 	 - TFTPClient.java - TFTP client
 	 - TFTPDataPacket.java - TFTP data packet class
-	 - TFTPErrorPacket.java - TFTP error packet class (not used in iteration 1)
+	 - TFTPErrorPacket.java - TFTP error packet class
 	 - TFTPErrorSimulator.java - TFTP error simulator
 	 - TFTPRequestHandler.java - Request handler thread that will be used by the server
 	 - TFTPRequestListner.java - Request listener thread that will be used by the server
@@ -68,6 +68,26 @@ Explaining the names of files:
 	 - ThreadLog.java - Helper class for all different threads to print information
 	 - Type.java - TFTP request types(WRQ, RRQ, .. etc)
  
+
+	- TFTPPacket.java - abstract class for all TFTP packets which defined several common functions
+	- TFTPAckPacket.java - class for TFTPAckPacket
+	- TFTPDataPacket.java - class for TFTPDataPacket
+	- TFTPErrorPacket.java - class for TFTPErrorPacket
+	- TFTPRequestPacket.java - class for TFTP RRQ request for TFTP WRQ request
+	- TFTPErrorType.java - enum class for all possible types of TFTP errors (only 1, 2, 3 and 6 are used in iteration 2)
+	- TFTPErrorException.java - exception that is thrown when a TFTPErrorPacket is received, or a TFTPErrorPacket is sent,
+	                            used for terminating the connection
+	- TFTPClient.java - TFTP client class, can send RRQ or WRQ to the TFTP server
+	- TFTPServer.java - TFTP server class, it will initialize a TFTP request listener thread which will listen for new request
+	- TFTPRequestListener.java - TFTP request listener class, it's a sub-class of thread, and it will listen to WRQ or RRQ on port 69
+	- TFTPRequestHandler.java - TFTP request handler class, it's a sub-class of thread, and it will handle the WRQ or RRQ received
+	                            by TFTP request listener thread
+	- TFTPErrorSimulator.java - Used for simulating error, not used in iteration 2, for now it will just receive a packet and forward
+	                            the packet without touching the packet
+	- Type.java - enum class for current printing mode (quite or verbose)
+
+	- ThreadLog.java - Helper class for all different threads to print information
+
  Breakdown of responsibilities:
  	- Yunkai Wang: most of the coding work
  	- Qingyi Yin: TFTPAckPacket class and all diagrams/documents
