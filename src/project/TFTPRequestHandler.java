@@ -95,8 +95,7 @@ public class TFTPRequestHandler extends Thread {
 	 * receive packet
 	 * resend previous packet if time out
 	 * 
-	 * @param blockNumber
-	 * @return TFTPDataPacket
+	 * @return datagram
 	 * @throws IOException 
 	 */
 	private DatagramPacket receivePacket() throws IOException {
