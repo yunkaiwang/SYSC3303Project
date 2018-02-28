@@ -4,15 +4,14 @@ Carleton University Winter 2018 SYSC 3303 Project.
 
 Set up test files:  
 	Step1: Go to the project directory.  
-	Step2: Create two folders: client_files, server_files.  
-	Step3: Create test files in these two folders.  
+	Step2: Create test files in these two folders, currently I put some test files in these folders, I put a random.txt in client_files folder, and random.txt and test.txt in server_files folder.  
 
 Set up environment:  
 	Step1: Go to TFTPClient then click run.  
 	Step2: Go to TFTPServer then click run.  
 	Step3: Go to TFTPErrorSimulator then click run.  
 
-Instruction of using TFTP:  
+Instructions of using our system:  
 	TFTPClient:  
 		- menu   ---> if you want to see the menu, type "menu" then press enter  
 		- exit   ---> if you want to stop the client and exit, type "exit" press enter  
@@ -67,7 +66,7 @@ Explaining the names of files:
 	- Type.java - enum class for all different types of TFTP requests (WRQ, RRQ, DATA, ACK, ERROR)  
 	- ThreadLog.java - Helper class for all different threads to print information  
 
- Breakdown of responsibilities:  
+Breakdown of responsibilities:  
  	- Yunkai Wang: most of the coding work  
  	- Qingyi Yin: TFTPAckPacket class and all diagrams/documents  
  	
@@ -83,15 +82,19 @@ Tips for testing iteration 2:
 		- same as above, test on a USB, and write a large test file to server  
 		- similar to above, in TFTPRequestHandler, line 200 - line 209 also checks if the disk is full by calling the the function getFreeSpace(), to fake a disk full exception, add "freeSpace = 0" on line 201, and the system will always send a DiskFull exception for WRQ. Deleting the line that you just added will make the sytem work again  
 
- Diagrams:  
+Diagrams:  
  	All the diagrams are in the diagram folder.  
- 	- uml: class diagram of this system  
- 	- ucm-rrq: UCM for read request  
- 	- ucm-wrq: UCM for write request  
-	- fileNotFound-RRQ: timing diagram for file not found during RRQ  
-	- fileNotFound-WRQ: timing diagram for file not found during WRQ  
-	- accessViolation-RRQ: timing diagram for access violation during RRQ  
-	- accessViolation-WRQ: timing diagram for access violation during WRQ  
-	- diskFull-RRQ: timing diagram for disk full during RRQ  
-	- diskFull-WRQ: timing diagram for disk full during WRQ  
-	- fileAlreadyExists - timing diagram for file already exists (only happends during WRQ)  
+
+	Old diagrams from iteration 1  
+ 		- ucm-rrq: UCM for read request  
+ 		- ucm-wrq: UCM for write request  
+
+	New diagrams for iteration 2  
+ 		- uml: class diagram of this system(updated with new classes)  
+		- fileNotFound-RRQ: timing diagram for file not found during RRQ  
+		- fileNotFound-WRQ: timing diagram for file not found during WRQ  
+		- accessViolation-RRQ: timing diagram for access violation during RRQ  
+		- accessViolation-WRQ: timing diagram for access violation during WRQ  
+		- diskFull-RRQ: timing diagram for disk full during RRQ  
+		- diskFull-WRQ: timing diagram for disk full during WRQ  
+		- fileAlreadyExists - timing diagram for file already exists (only happends during WRQ)  
