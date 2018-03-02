@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.Arrays;
 
 /**
@@ -17,6 +18,12 @@ import java.util.Arrays;
  * @author yunkai wang
  *
  */
+/**
+ * For iteration 3, when the sent package cannot get the corresponding response in a period of time
+ * it will be considered as a timeout, the request handler will then resend the previous package 
+ * after several times of timeouts, the send request is considered to be failed
+ * 
+ */
 public class TFTPRequestHandler extends Thread {
 	private TFTPServer server; // server that this listener is working for
 	private InetAddress address; // client address
@@ -25,6 +32,10 @@ public class TFTPRequestHandler extends Thread {
 	private TFTPRequestPacket packet; // the packet that initialized this handler thread
 	private byte[] data; // packet data
 	private String filename; // filename of the request
+	
+	public static final int MAX_SEND_TIMES = 3; // timeout times
+	public static final int DEFAULT_TIMEOUT= 2000; // timeout period
+	private DatagramPacket resendPacket; // duplicate of the last packet
 
 	/**
 	 * Constructor
@@ -75,19 +86,35 @@ public class TFTPRequestHandler extends Thread {
 	 * @throws IOException
 	 */
 	private void sendRequest(DatagramPacket packet) throws IOException {
+		resendPacket = packet; // get the previous packet
 		socket.send(packet);
 	}
 
 	/**
-	 * Receive datagram packet
+	 * receive packet
+	 * resend previous packet if time out
 	 * 
-	 * @return datagramPacket
-	 * @throws IOException
+	 * @param blockNumber
+	 * @return TFTPDataPacket
+	 * @throws IOException 
 	 */
 	private DatagramPacket receivePacket() throws IOException {
-		DatagramPacket packet = new DatagramPacket(new byte[TFTPPacket.MAX_LENGTH], TFTPPacket.MAX_LENGTH);
-		socket.receive(packet);
-		return packet;
+		int timeouts = 0;
+		while (timeouts < TFTPRequestHandler.MAX_SEND_TIMES) {
+			try {
+				DatagramPacket receivePacket = new DatagramPacket(new byte[TFTPPacket.MAX_LENGTH],
+						TFTPPacket.MAX_LENGTH);
+				socket.receive(receivePacket);
+				return receivePacket;
+			} catch (SocketTimeoutException e) {
+				if (++timeouts >= TFTPRequestHandler.MAX_SEND_TIMES) 
+					throw new IOException("Connection timed out. ");
+			}
+			ThreadLog.print("Receive timed out " + timeouts + " times. Try it again. ");
+			sendRequest(this.resendPacket);
+			continue;
+		}
+		return null;
 	}
 
 	/**
@@ -153,6 +180,7 @@ public class TFTPRequestHandler extends Thread {
 			server.printInformation(packet);
 
 			socket = new DatagramSocket(); // create the socket
+			socket.setSoTimeout(TFTPRequestHandler.DEFAULT_TIMEOUT);
 
 			file = new File(filePath);
 			if (file.exists()) { // check if file already exist
@@ -252,6 +280,7 @@ public class TFTPRequestHandler extends Thread {
 			server.printInformation(packet);
 
 			socket = new DatagramSocket();
+			socket.setSoTimeout(TFTPRequestHandler.DEFAULT_TIMEOUT);
 
 			file = new File(filePath);
 			if (!file.exists()) { // check if file exist
@@ -336,4 +365,4 @@ public class TFTPRequestHandler extends Thread {
 		server.decrementNumThread(); // decrease the thread count in server
 	}
 
-}
+}  
