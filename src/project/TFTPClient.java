@@ -22,7 +22,6 @@ public class TFTPClient {
 	 * it will be considered as a timeout, the client will then resend the previous package 
 	 * after several times of timeouts, the send request is considered to be failed
 	 * 
-	 * @author lairu wu Last modified on Feb 25, 2018
 	 */
 	private enum runningMode {
 		test, normal;
