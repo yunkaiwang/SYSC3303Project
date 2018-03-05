@@ -32,8 +32,6 @@ public class TFTPRequestHandler extends Thread {
 	private byte[] data; // packet data
 	private String filename; // filename of the request
 	
-	public static final int MAX_SEND_TIMES = 3; // timeout times
-	public static final int DEFAULT_TIMEOUT= 2000; // timeout period
 	private DatagramPacket resendPacket; // duplicate of the last packet
 
 	/**
