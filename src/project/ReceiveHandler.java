@@ -26,6 +26,9 @@ public class ReceiveHandler {
 	public static final int DEFAULT_TIMEOUT = 2000; // timeout period
 	
 	/**
+	 * handle the reception of packets in TFTPClient and TFTPRequestHandler
+	 * if the packet timed out, resend the packet except ACK before reaching the timeout limit
+	 * throw exceptions for 7 error cases listed above
 	 * 
 	 * @param socket
 	 * @param expectedType
@@ -88,6 +91,16 @@ public class ReceiveHandler {
 		return tftpPacket;
 	}
 	
+	
+	/**
+	 * handle the reception of ERROR packets, packets other than the expected type,
+	 * packets invalid block number
+	 * 
+	 * @param tftpPacket
+	 * @param expectedType
+	 * @param expectedBlockNum
+	 * @throws TFTPErrorException 
+	 */
 	private static void validReceivedPacket(TFTPPacket tftpPacket, Type expectedType, 
 			int expectedBlockNum) throws TFTPErrorException {
 		Type tmpType = tftpPacket.type();
@@ -138,7 +151,15 @@ public class ReceiveHandler {
 	}
 	
 	
-	
+	/**
+	 * to check these possible duplicate blocks in a packet 
+	 * by comparing expected and actual block numbers
+	 * 
+	 * @param tftpPacket
+	 * @param expectedType
+	 * @param expectedBlockNum
+	 * @return
+	 */
 	private static boolean isDuplicate(TFTPPacket tftpPacket, Type expectedType, int expectedBlockNum) {
 		if((expectedType != Type.ACK) && (expectedType != Type.DATA))
 			return false;
