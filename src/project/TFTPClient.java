@@ -16,6 +16,12 @@ public class TFTPClient {
 	// as required by the project, the client may run in two modes,
 	// in test mode, the error simulator program will get involved,
 	// in normal mode, the requests will be directly sent to the server
+	/**
+	 * For iteration 3, when the sent package cannot get the corresponding response in a period of time
+	 * it will be considered as a timeout, the client will then resend the previous package 
+	 * after several times of timeouts, the send request is considered to be failed
+	 * 
+	 */
 	private enum runningMode {
 		test, normal;
 	}
@@ -33,6 +39,8 @@ public class TFTPClient {
 	private InetAddress serverAddress; // server address
 	private int serverPort; // server port
 	private String folder = defaultFolder; // current folder directory
+	
+	private DatagramPacket resendPacket; // duplicate of the last packet
 
 	/**
 	 * Constructor
@@ -57,6 +65,7 @@ public class TFTPClient {
 		
 		try { // create the socket
 			socket = new DatagramSocket();
+			socket.setSoTimeout(ReceiveHandler.DEFAULT_TIMEOUT); //set timeout
 		} catch (SocketException e) {
 			System.exit(0); // failed to create socket, exit
 		}
@@ -266,13 +275,15 @@ public class TFTPClient {
 				if (commands.length != 2)
 					print("Invalid request! Please enter a valid filename for "
 							+ "read request(e.g. read text.txt)\n");
-				readFileFromServer(commands[1]);
+				else
+					readFileFromServer(commands[1]);
 				continue;
 			case "write": // send WRQ
 				if (commands.length != 2)
 					print("Invalid request! Please enter a valid filename for "
 							+ "write request(e.g. write text.txt)\n");
-				writeFileToServer(commands[1]);
+				else
+					writeFileToServer(commands[1]);
 				continue;
 			default: // invalid request
 				print("Invalid command, please try again!\n");
@@ -315,6 +326,7 @@ public class TFTPClient {
 	 * @throws IOException
 	 */
 	private void sendPacket(DatagramPacket packet) throws IOException {
+		resendPacket = packet; // get the previous packet
 		socket.send(packet);
 	}
 
@@ -324,11 +336,26 @@ public class TFTPClient {
 	 * @return datagramPacket
 	 * @throws IOException
 	 */
+	/*
 	private DatagramPacket receivePacket() throws IOException {
-		DatagramPacket packet = new DatagramPacket(new byte[TFTPPacket.MAX_LENGTH], TFTPPacket.MAX_LENGTH);
-		socket.receive(packet);
-		return packet;
+		int timeouts = 0;
+		while (timeouts < ReceiveHandler.MAX_SEND_TIMES) {
+			try {
+				DatagramPacket receivePacket = new DatagramPacket(new byte[TFTPPacket.MAX_LENGTH],
+						TFTPPacket.MAX_LENGTH);
+				socket.receive(receivePacket);
+				return receivePacket;
+			} catch (SocketTimeoutException e) {
+				if (++timeouts >= ReceiveHandler.MAX_SEND_TIMES) 
+					throw new IOException("Connection timed out. ");
+			}
+			ThreadLog.print("Receive timed out " + timeouts + " times. Try it again. ");
+			sendPacket(this.resendPacket);
+			continue;
+		}
+		return null;
 	}
+	*/
 
 	/**
 	 * Send disk full error packet, used only when the client sends a read request,
@@ -387,15 +414,9 @@ public class TFTPClient {
 			// run until we received the last data packet
 			do {
 				// receive the data packet and create TFTPPacket from it
-				packet = TFTPPacket.createFromPacket(receivePacket());
-
-				// if received packet is not TFTPDataPacket, raise an exception
-				if (packet instanceof TFTPDataPacket)
-					DATAPacket = (TFTPDataPacket) packet;
-				else if (packet instanceof TFTPErrorPacket)
-					throw new TFTPErrorException(((TFTPErrorPacket) packet).getErrorMsg());
-				else
-					throw new TFTPErrorException("Unknown packet received.");
+				packet = ReceiveHandler.receiveTFTPPacket(socket, Type.DATA, 
+						blockNumber, true, resendPacket);
+				DATAPacket = (TFTPDataPacket) packet;	
 
 				// if no exception is thrown, then print the information
 				print("Client have received the data packet.");
@@ -480,21 +501,16 @@ public class TFTPClient {
 
 			byte[] data = new byte[TFTPDataPacket.MAX_DATA_LENGTH];
 			int byteUsed = 0;
-			int blockNumber = 0; // the first packet received should have block number 0
+			int blockNumber = 0; // the first ACK packet received should have block number 0
 
+			TFTPPacket packet = null;
 			TFTPAckPacket AckPacket = null; // for receiving ack packet
 			// run until we have sent all the information
 			do {
-				// receive the datagram packet
-				TFTPPacket packet = TFTPPacket.createFromPacket(receivePacket());
-
-				if (packet instanceof TFTPAckPacket)
-					AckPacket = (TFTPAckPacket) packet;
-				else if (packet instanceof TFTPErrorPacket)
-					throw new TFTPErrorException(((TFTPErrorPacket) packet).getErrorMsg());
-				else
-					throw new TFTPErrorException("Unknown packet received.");
-
+				// receive ACK
+				packet = ReceiveHandler.receiveTFTPPacket(socket, Type.ACK, 
+						blockNumber, false, resendPacket);
+				AckPacket = (TFTPAckPacket) packet;
 				print("Client have received the ack packet.");
 				printInformation(AckPacket);
 				byteUsed = fs.read(data);
@@ -508,26 +524,21 @@ public class TFTPClient {
 				}
 
 				// form the data packet that will be sent to the server
-				TFTPDataPacket DATAPacket = new TFTPDataPacket(blockNumber, Arrays.copyOfRange(data, 0, byteUsed),
+				TFTPDataPacket DATAPacket = new TFTPDataPacket(++blockNumber, Arrays.copyOfRange(data, 0, byteUsed),
 						byteUsed, AckPacket.getAddress(), AckPacket.getPort());
 
 				// send the data packet
 				sendPacket(DATAPacket.createDatagramPacket());
-				print("Client have sent the data packet.");
+				print("Client have sent the data packet, blocknumber=" + blockNumber);
 				printInformation(DATAPacket);
 			} while (byteUsed == TFTPDataPacket.MAX_DATA_LENGTH);
 
 			// receive the last ack packet from the server
-			TFTPPacket packet = TFTPPacket.createFromPacket(receivePacket());
-
-			if (packet instanceof TFTPAckPacket)
-				AckPacket = (TFTPAckPacket) packet;
-			else if (packet instanceof TFTPErrorPacket)
-				throw new TFTPErrorException(((TFTPErrorPacket) packet).getErrorMsg());
-			else
-				throw new TFTPErrorException("Unknown packet received.");
-
+			packet = ReceiveHandler.receiveTFTPPacket(socket, Type.ACK, 
+					blockNumber, false, resendPacket);
+			AckPacket = (TFTPAckPacket) packet;
 			print("Client have received the ack packet.");
+			printInformation(AckPacket);
 			fs.close();
 		} catch (TFTPErrorException e) {
 			print("TFTP Error: Failed to write " + filename
@@ -547,4 +558,4 @@ public class TFTPClient {
 		TFTPClient client = new TFTPClient();
 		client.waitForCommand();
 	}
-}
+}  
