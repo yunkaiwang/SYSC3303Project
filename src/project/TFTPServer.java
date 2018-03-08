@@ -76,14 +76,15 @@ public class TFTPServer {
 	 */
 	private static void printMenu() {
 		System.out.println("Available commands:\n"
-	            + "  menu        - show the menu\n"
-				+ "  exit        - stop the client\n"
-	            + "  mode        - show current mode\n"
-				+ "  switch      - switch mode\n"
-	            + "  count       - number of threads that are running\n"
-				+ "  dir/pwd     - current directory\n"
-	            + "  la          - list of files under current directory\n"
-				+ "  cd <folder> - change directory, new directoly location should be written using /(i.e. ../new_client/)\n");
+	            + "  menu          - show the menu\n"
+				+ "  exit          - stop the client\n"
+	            + "  mode          - show current mode\n"
+				+ "  switch        - switch mode\n"
+	            + "  count         - number of threads that are running\n"
+				+ "  dir/pwd       - current directory\n"
+	            + "  la/ls         - list of files under current directory\n"
+	  		    + "  rm <filename> - remove existing file\n"
+				+ "  cd <folder>   - change directory, new directoly location should be written using /(i.e. ../new_client/)\n");
 	}
 
 	/**
@@ -100,6 +101,15 @@ public class TFTPServer {
 			System.out.println(packet);
 			return;
 		}
+	}
+	
+	/**
+	 * remove a given file from server folder
+	 * 
+	 * @param filename
+	 */
+	private void removeFile(String filename) {
+		new File(getFilePath(filename)).delete();
 	}
 
 	/**
@@ -252,10 +262,14 @@ public class TFTPServer {
 				printDirectory();
 				continue;
 			case "la":
+			case "ls":
 				printListFiles();
 				continue;
 			case "cd":
 				switchDirectory(commands[1]);
+				continue;
+			case "rm":
+				this.removeFile(commands[1]);
 				continue;
 			default:
 				System.out.println("Invalid command, please try again!\n");

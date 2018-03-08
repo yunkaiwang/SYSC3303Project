@@ -4,6 +4,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Scanner;
@@ -20,6 +21,7 @@ public class TFTPClient {
 		test, normal;
 	}
 
+	private static final int TIMEOUT = 2000; // time out
 	private static final int DEFAULT_SERVER_PORT = 69; // default server port
 	private static final int DEFAULT_ERROR_SIMULATOR_PORT = 23; // default error simulator port
 	
@@ -33,7 +35,9 @@ public class TFTPClient {
 	private InetAddress serverAddress; // server address
 	private int serverPort; // server port
 	private String folder = defaultFolder; // current folder directory
-
+	private TFTPPacket lastPacket; // last packet sent
+	
+	
 	/**
 	 * Constructor
 	 * 
@@ -57,6 +61,7 @@ public class TFTPClient {
 		
 		try { // create the socket
 			socket = new DatagramSocket();
+			socket.setSoTimeout(TIMEOUT);
 		} catch (SocketException e) {
 			System.exit(0); // failed to create socket, exit
 		}
@@ -135,7 +140,8 @@ public class TFTPClient {
 		  "  mode             - show current mode\n" +
 		  "  switch           - switch print mode(verbose or quite)\n" +
 		  "  reset            - reset running mode(test or normal)\n" +
-		  "  la               - list of files under current directory\n" +
+		  "  la/ls            - list of files under current directory\n" +
+		  "  rm <filename>    - remove existing file\n" +
 		  "  pwd/dir          - current directory\n" +
 		  "  cd <folder>      - change directory, new directoly location should be written using /(i.e. ../new_client/)\n" +
 		  "  read <filename>  - send RRQ(i.e. read text.txt)\n" + 
@@ -247,7 +253,11 @@ public class TFTPClient {
 				printDirectory();
 				continue;
 			case "la": // print list of files
+			case "ls":
 				printListFiles();
+				continue;
+			case "rm": // print list of files
+				removeFile(commands[1]);
 				continue;
 			case "cd": // change directory
 				switchDirectory(commands[1]);
@@ -266,18 +276,29 @@ public class TFTPClient {
 				if (commands.length != 2)
 					print("Invalid request! Please enter a valid filename for "
 							+ "read request(e.g. read text.txt)\n");
-				readFileFromServer(commands[1]);
+				else
+					readFileFromServer(commands[1]);
 				continue;
 			case "write": // send WRQ
 				if (commands.length != 2)
 					print("Invalid request! Please enter a valid filename for "
 							+ "write request(e.g. write text.txt)\n");
-				writeFileToServer(commands[1]);
+				else
+					writeFileToServer(commands[1]);
 				continue;
 			default: // invalid request
 				print("Invalid command, please try again!\n");
 			}
 		}
+	}
+
+	/**
+	 * remove a given file from client folder
+	 * 
+	 * @param filename
+	 */
+	private void removeFile(String filename) {
+		new File(getFilePath(filename)).delete();
 	}
 
 	/**
@@ -314,8 +335,9 @@ public class TFTPClient {
 	 * @param packet
 	 * @throws IOException
 	 */
-	private void sendPacket(DatagramPacket packet) throws IOException {
-		socket.send(packet);
+	private void sendPacket(TFTPPacket packet) throws IOException {
+		lastPacket = packet;
+		socket.send(packet.createDatagramPacket());
 	}
 
 	/**
@@ -324,8 +346,8 @@ public class TFTPClient {
 	 * @return datagramPacket
 	 * @throws IOException
 	 */
-	private DatagramPacket receivePacket() throws IOException {
-		DatagramPacket packet = new DatagramPacket(new byte[TFTPPacket.MAX_LENGTH], TFTPPacket.MAX_LENGTH);
+	private DatagramPacket receivePacket() throws IOException, SocketTimeoutException {
+		DatagramPacket packet = TFTPPacket.createDatagramPacketForReceive();
 		socket.receive(packet);
 		return packet;
 	}
@@ -341,7 +363,7 @@ public class TFTPClient {
 	private void sendDiskFull(String errorMsg, InetAddress address, int port) throws IOException {
 		print("Client has sent disk full error packet to server.");
 		TFTPErrorPacket errorPacket = TFTPErrorPacket.createDiskfullErrorPacket(errorMsg, address, port);
-		sendPacket(errorPacket.createDatagramPacket());
+		sendPacket(errorPacket);
 	}
 	
 	/**
@@ -374,7 +396,7 @@ public class TFTPClient {
 			TFTPRequestPacket RRQPacket = TFTPRequestPacket.createReadRequest(filename, serverAddress, serverPort);
 
 			// send the RRQ packet
-			sendPacket(RRQPacket.createDatagramPacket());
+			sendPacket(RRQPacket);
 			
 			// print the information
 			print("Client have sent the RRQ.");
@@ -417,7 +439,7 @@ public class TFTPClient {
 				TFTPAckPacket AckPacket = new TFTPAckPacket(blockNumber, DATAPacket.getAddress(), DATAPacket.getPort());
 
 				// send the ack packet
-				sendPacket(AckPacket.createDatagramPacket());
+				sendPacket(AckPacket);
 				
 				// print the information in the packet
 				print("Client have sent the ack packet.");
@@ -474,7 +496,7 @@ public class TFTPClient {
 			TFTPRequestPacket WRQPacket = TFTPRequestPacket.createWriteRequest(filename, serverAddress, serverPort);
 
 			// send the WRQ packet
-			sendPacket(WRQPacket.createDatagramPacket());
+			sendPacket(WRQPacket);
 			print("Client have sent the WRQ.");
 			printInformation(WRQPacket);
 
@@ -512,7 +534,7 @@ public class TFTPClient {
 						byteUsed, AckPacket.getAddress(), AckPacket.getPort());
 
 				// send the data packet
-				sendPacket(DATAPacket.createDatagramPacket());
+				sendPacket(DATAPacket);
 				print("Client have sent the data packet.");
 				printInformation(DATAPacket);
 			} while (byteUsed == TFTPDataPacket.MAX_DATA_LENGTH);
