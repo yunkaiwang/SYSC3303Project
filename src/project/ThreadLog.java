@@ -12,4 +12,8 @@ public class ThreadLog {
 	public static void print(String msg) {
 		System.out.println("Thread #" + Thread.currentThread().getId() + ": " + msg);
 	}
+	// Thread printing function
+	public static String formatThreadPrint(String msg) {
+		return "Thread #" + Thread.currentThread().getId() + ": " + msg;
+	}
 }

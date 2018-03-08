@@ -17,7 +17,9 @@ public class TFTPErrorSimulator {
 
 	// The error that will be simulated
 	private enum ErrorType {
-		lose("Lose a packet"), delay("Delay a packet"), duplicate("Duplicate a packet");
+		lose("Lose a packet"),
+		delay("Delay a packet"),
+		duplicate("Duplicate a packet");
 
 		String representation;
 
@@ -44,7 +46,9 @@ public class TFTPErrorSimulator {
 
 	// the packet that we will simulate the error
 	private enum PacketType {
-		request("TFTP request packet (WRQ or RRQ)"), data("TFTP data packet"), ack("TFTP ack packet");
+		request("TFTP request packet (WRQ or RRQ)"),
+		data("TFTP data packet"),
+		ack("TFTP ack packet");
 
 		String representation;
 
@@ -590,8 +594,7 @@ public class TFTPErrorSimulator {
 	 * Wait for a new request
 	 */
 	public void waitForRequest() {
-		byte data[] = new byte[TFTPPacket.MAX_LENGTH];
-		DatagramPacket packet = new DatagramPacket(data, data.length);
+		DatagramPacket packet = TFTPPacket.createDatagramPacketForReceive();
 		System.out.println("Error simulator is waiting for new requests.");
 
 		try {
@@ -611,9 +614,9 @@ public class TFTPErrorSimulator {
 					System.out.println("*****Lose packet*****");
 
 					// prepare to receive a new request packet
-					data = new byte[TFTPPacket.MAX_LENGTH]; // clean old bytes
-					packet = new DatagramPacket(data, data.length); // create new datagram packet for receiving
+					packet = TFTPPacket.createDatagramPacketForReceive(); // create new datagram packet for receiving
 					receiveSocket.receive(packet); // receive new request packet from client
+					requestPacket = TFTPRequestPacket.createFromPacket(packet);
 					System.out.println("Error simulator received request packet again.");
 				}
 			}
@@ -637,10 +640,10 @@ public class TFTPErrorSimulator {
 	 */
 	private void initialize() {
 		this.errorType = null;
-		this.packetCount = 0;
+		this.packetCount = -1;
 		this.packetType = null;
-		this.dataPacketCount = 0;
-		this.ackPacketCount = 0;
+		this.dataPacketCount = -1;
+		this.ackPacketCount = -1;
 	}
 
 	/**
