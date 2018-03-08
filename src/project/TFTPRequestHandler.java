@@ -74,8 +74,8 @@ public class TFTPRequestHandler extends Thread {
 	 * @param packet
 	 * @throws IOException
 	 */
-	private void sendRequest(DatagramPacket packet) throws IOException {
-		socket.send(packet);
+	private void sendRequest(TFTPPacket packet) throws IOException {
+		socket.send(packet.createDatagramPacket());
 	}
 
 	/**
@@ -85,7 +85,7 @@ public class TFTPRequestHandler extends Thread {
 	 * @throws IOException
 	 */
 	private DatagramPacket receivePacket() throws IOException {
-		DatagramPacket packet = new DatagramPacket(new byte[TFTPPacket.MAX_LENGTH], TFTPPacket.MAX_LENGTH);
+		DatagramPacket packet = TFTPPacket.createDatagramPacketForReceive();
 		socket.receive(packet);
 		return packet;
 	}
@@ -99,7 +99,7 @@ public class TFTPRequestHandler extends Thread {
 	private void sendFileNotFound(String errorMsg) throws IOException {
 		ThreadLog.print("Request handler has sent file not found error packet back to client.");
 		TFTPErrorPacket errorPacket = TFTPErrorPacket.createFileNotFoundErrorPacket(errorMsg, address, port);
-		sendRequest(errorPacket.createDatagramPacket());
+		sendRequest(errorPacket);
 	}
 	
 	/**
@@ -111,7 +111,7 @@ public class TFTPRequestHandler extends Thread {
 	private void sendDiskFull(String errorMsg) throws IOException {
 		ThreadLog.print("Request handler has sent disk full error packet back to client.");
 		TFTPErrorPacket errorPacket = TFTPErrorPacket.createDiskfullErrorPacket(errorMsg, address, port);
-		sendRequest(errorPacket.createDatagramPacket());
+		sendRequest(errorPacket);
 	}
 	
 	/**
@@ -123,7 +123,7 @@ public class TFTPRequestHandler extends Thread {
 	private void sendFileAlreadyExist(String errorMsg) throws IOException {
 		ThreadLog.print("Request handler has sent file already exist error packet back to client.");
 		TFTPErrorPacket errorPacket = TFTPErrorPacket.createFileAlreadyExistErrorPacket(errorMsg, address, port);
-		sendRequest(errorPacket.createDatagramPacket());
+		sendRequest(errorPacket);
 	}
 
 	/**
@@ -135,7 +135,7 @@ public class TFTPRequestHandler extends Thread {
 	private void sendAccessViolation(String errorMsg) throws IOException {
 		ThreadLog.print("Request handler has sent access violation error packet back to client.");
 		TFTPErrorPacket errorPacket = TFTPErrorPacket.createAccessViolationErrorPacket(errorMsg, address, port);
-		sendRequest(errorPacket.createDatagramPacket());
+		sendRequest(errorPacket);
 	}
 
 	/**
@@ -172,7 +172,7 @@ public class TFTPRequestHandler extends Thread {
 			TFTPAckPacket AckPacket = new TFTPAckPacket(blockNumber, address, port);
 
 			// request handler sends the ack packet
-			sendRequest(AckPacket.createDatagramPacket());
+			sendRequest(AckPacket);
 			ThreadLog.print("Request handler have sent the Ack packet.");
 			server.printInformation(AckPacket);
 
@@ -212,7 +212,7 @@ public class TFTPRequestHandler extends Thread {
 				AckPacket = new TFTPAckPacket(blockNumber++, address, port);
 
 				// request handler sends the ack packet
-				sendRequest(AckPacket.createDatagramPacket());
+				sendRequest(AckPacket);
 				ThreadLog.print("Request handler have sent the Ack packet.");
 				server.printInformation(AckPacket);
 			} while (!DATAPacket.isLastDataPacket());
@@ -290,7 +290,7 @@ public class TFTPRequestHandler extends Thread {
 						byteUsed, address, port);
 
 				// request handler sends the packet
-				sendRequest(DATAPacket.createDatagramPacket());
+				sendRequest(DATAPacket);
 				ThreadLog.print("Request handler have sent the Data packet.");
 				server.printInformation(DATAPacket);
 

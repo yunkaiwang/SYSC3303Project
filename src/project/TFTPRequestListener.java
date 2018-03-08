@@ -58,7 +58,7 @@ public class TFTPRequestListener extends Thread {
 		
 		while (acceptNewConnection) { // keep waiting for new connection
 			// create new packet for receiving new requests
-			DatagramPacket packet = new DatagramPacket(new byte[TFTPPacket.MAX_LENGTH], TFTPPacket.MAX_LENGTH);
+			DatagramPacket packet = TFTPPacket.createDatagramPacketForReceive();
 			try {
 				// a new packet is received
 				socket.receive(packet);
