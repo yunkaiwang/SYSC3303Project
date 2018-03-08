@@ -12,6 +12,8 @@ import java.util.Arrays;
  *
  */
 public abstract class TFTPPacket {
+	public static final int TIMEOUT = 2000; // time out
+	public static final int MAX_RETRY = 5; // maximum retry time
 	public static final int MAX_LENGTH = 516; // max packet data length (complete data packet)
 	public static final int MIN_LENGTH = 4; // min packet data length (ack packet)
 	private final Type type; // type

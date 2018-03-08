@@ -90,10 +90,12 @@ public class TFTPServer {
 	/**
 	 * Print information stored in TFTPPacket
 	 * 
+	 * @param info
 	 * @param packet
 	 * @throws IOException
 	 */
-	public void printInformation(TFTPPacket packet) throws IOException {
+	public void printInformation(String info, TFTPPacket packet) throws IOException {
+		System.out.println(info);
 		switch (this.currentMode) {
 		case QUITE: // don't print detailed information in QUITE mode
 			return;
