@@ -207,6 +207,7 @@ public class TFTPRequestHandler extends Thread {
 							// received old data packet, send the ack packet and
 							// wait for the correct data packet
 							else if (DATAPacket.getBlockNumber() < blockNumber) {
+								ThreadLog.print("Request handler have received one old data packet, sending the ack packet");
 								sendRequest(new TFTPAckPacket(DATAPacket.getBlockNumber(), 
 										address, port));
 							}

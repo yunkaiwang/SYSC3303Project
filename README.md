@@ -4,7 +4,7 @@ Carleton University Winter 2018 SYSC 3303 Project.
 
 Set up test files:  
 	Step1: Go to the project directory.  
-	Step2: Create test files in these two folders, currently I put some test files in these folders, I put a random.txt in client_files folder, and random.txt and test.txt in server_files folder.  
+	Step2: Create test files in these client_files and server_files folder    
 
 Set up environment:  
 	Step1: Go to TFTPClient then click run.  
@@ -20,7 +20,8 @@ Instructions of using our system:
 		- reset  ---> if you want to reset running mode(test or normal), type "reset" then press enter  
 		- read   ---> if you want to read a file from server, type "read <filename>" then press enter  
 		- write  ---> if you want to write a file to server, type "write <filename>" then press enter  
-                - la     ---> if you want to see all the files under current directory, type "la" then press enter  
+                - la/ls  ---> if you want to see all the files under current directory, type "la" then press enter 
+		- rm     ---> if you want to remove a file under current directory, type "rm <filename>" then press enter  
 		- pwd/dir---> if you want to see current directory path, type "pwd" or "dir" then press enter  
 		- cd     ---> if you want to check the directory path, type "cd <path>" then press enter  
 	TFTPServer:  
@@ -29,11 +30,23 @@ Instructions of using our system:
 		- mode   ---> if you want to see the current mode, type "mode" then press enter  
 		- switch ---> if you want to switch mode(verbose, quite, normal, or test), type "switch" then press enter  
 		- count  ---> if you want to see current number of running threads, type "count" then press enter  
-		- la     ---> if you want to see all the files under current directory, type "la" then press enter  
+		- la/ls  ---> if you want to see all the files under current directory, type "la" then press enter  
+		- rm     ---> if you want to remove a file under current directory, type "rm <filename>" then press enter  
 		- pwd/dir---> if you want to see current directory path, type "pwd" or "dir" then press enter  
 		- cd     ---> if you want to check the directory path, type "cd <path>" then press enter  
 	TFTPErrorSimulator:  
-		For iteration 2, the error simulator doesn't support any command, it will just wait for a new request from the client, and forward the request to the server, forward the request from the server to the client, it will not touch any information stored in the packet.  
+		For project iteration 3, the user will be able to simulate "lost", "delay" or "duplicate" of packet, or perform a normal file transfer. (Note that request packet cannot be delayed or duplicated for project iteration 3, it can only be lost)  
+		- menu     ---> if you want to see the menu, type "menu" then press enter  
+		- exit     ---> if you want to stop the client and exit, type "exit" press enter  
+		- normal   ---> if you want to perform a TFTP file transfer without any error, type "normal" press enter  
+		- lose     ---> if you want to perform a TFTP file transfer with packet lose, type "lose" press enter  
+		- delay    ---> if you want to perform a TFTP file transfer with packet delay with the a specified delay time, type "delay <millisecond>" press enter  
+		- duplicate --> if you want to perform a TFTP file transfer with duplicate packet, type "duplicate" press enter  
+
+		If you entered "lose", "delay" or "duplicate" in previous choice, the program will ask you for input again, where you will be choosing the type of packet and block number to simulate the error:  
+		- request   ---> if you want to simulate the error on request packet, type "request" and press enter  
+		- data      ---> if you want to simulate the error on data packet, type "data <blkNum>" press enter, the block number is the specified data packet which you want to simulate the error  
+		- ack ---> if you want to simulate the error on ack packet, type "ack <blkNum> press enter, the block number is the specified data packet which you want to simulate the error  
 		
 Testing step:  
 	1. follow the instructions in set up environment to start all the applications  
@@ -46,6 +59,11 @@ Testing step:
 		3.1 in terminal, type reset(this will set the running mode to test)  
 		3.2 same as 2.2  
 		3.3 same as 2.3  
+	4. If you want to simulate error(make sure you are in test mode first)  
+		4.1 in error simulator's terminal, choose the type of error  
+		4.2 if you want to test lost packet, type "lose" and press enter, then select the packet type and press enter  
+		4.3 if you want to test delay packet, type "delay" and press enter, then select the packet type and press enter  
+		4.4 if you want to test duplicate packet, type "duplicate" and press enter, then select the packet type and press enter  
 	4. to exit, simply type 'exit'  
 	5. if you want to change the printing mode in server, in the server terminal, type 'switch'.  
 	
@@ -67,9 +85,15 @@ Explaining the names of files:
 	- ThreadLog.java - Helper class for all different threads to print information  
 
 Breakdown of responsibilities:  
- 	- Yunkai Wang: most of the coding work  
+ 	Previous interations:  
+	- Yunkai Wang: most of the coding work  
  	- Qingyi Yin: TFTPAckPacket class and all diagrams/documents  
  	
+	iteration 3:  
+	- Yunkai Wang: change error simulator & request handler & client to handler duplicate/delay/lose packet cases, improve the usability of the program  
+	- Qingyi Yin: all diagrams/documents  
+
+
 Tips for testing iteration 2:  
 	- if you want to test fileNotFound error, simply send a RRQ with a file that doesn't exist in the server's folder  
 	- if you want to test fileAlreadyExist error, simply send a WRQ with a file that already exist in the server's folder  
@@ -85,11 +109,17 @@ Tips for testing iteration 2:
 Diagrams:  
  	All the diagrams are in the diagram folder.  
 
+<<<<<<< HEAD
 	Diagrams from iteration 1
  		- ucm-rrq: UCM for read request  
  		- ucm-wrq: UCM for write request  
 
 	Diagrams for iteration 2
+=======
+	Old diagrams from iteration 1 & 2  
+ 		- ucm-rrq: UCM for read request  
+ 		- ucm-wrq: UCM for write request  
+>>>>>>> 0077ce7c4708001b525e4d8d8d080e295f89a667
  		- uml: class diagram of this system(updated with new classes)  
 		- fileNotFound-RRQ: timing diagram for file not found during RRQ  
 		- fileNotFound-WRQ: timing diagram for file not found during WRQ  

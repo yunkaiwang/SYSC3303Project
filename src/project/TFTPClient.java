@@ -268,6 +268,7 @@ public class TFTPClient {
 				continue;
 			case "mode": // print current mode
 				printMode();
+				printRunningMode();
 				continue;
 			case "switch": // switch current print mode
 				switchMode();
