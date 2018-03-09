@@ -334,6 +334,8 @@ public class TFTPRequestHandler extends Thread {
 							AckPacket = (TFTPAckPacket) packet;
 							if (AckPacket.getBlockNumber() == blockNumber)
 								break;
+							else if (AckPacket.getBlockNumber() < blockNumber)
+								ThreadLog.print("Request handler have received one old ack packet, will ignore it...");
 						} else if (packet instanceof TFTPErrorPacket)
 							throw new TFTPErrorException(((TFTPErrorPacket) packet).getErrorMsg());
 						else

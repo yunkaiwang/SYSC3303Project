@@ -13,6 +13,12 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+/**
+ * TFTPClient
+ * 
+ * @author yunkai wang
+ *
+ */
 public class TFTPClient {
 	// as required by the project, the client may run in two modes,
 	// in test mode, the error simulator program will get involved,
@@ -419,6 +425,7 @@ public class TFTPClient {
 							// received old data packet, send the ack packet and
 							// wait for the correct data packet
 							else if (DATAPacket.getBlockNumber() < blockNumber) {
+								print("Client have received one old data packet, sending the ack packet");
 								sendPacket(new TFTPAckPacket(DATAPacket.getBlockNumber(), 
 										DATAPacket.getAddress(), DATAPacket.getPort()));
 							}

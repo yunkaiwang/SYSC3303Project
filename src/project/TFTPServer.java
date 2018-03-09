@@ -6,6 +6,14 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.util.Scanner;
 
+/**
+ * TFTPServer
+ * This program only waits for user commands, all the TFTP file transfer
+ * and request listening are done with other threads.
+ * 
+ * @author yunkai wang
+ *
+ */
 public class TFTPServer {
 	public static final int TFTP_LISTEN_PORT = 69; // default port
 	private Mode currentMode; // verbose or quite
