@@ -44,6 +44,7 @@ public class TFTPErrorSimulator {
 			try {
 				Thread.sleep(delayTime);
 				socket.send(packet);
+				ThreadLog.print("Delay thread have sent the delayed packet");
 			} catch (InterruptedException e) {
 				ThreadLog.print("Delay thread is interrupted while delaying the packet");
 			} catch (IOException e) {
