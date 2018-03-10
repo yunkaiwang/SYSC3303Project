@@ -109,17 +109,9 @@ Tips for testing iteration 2:
 Diagrams:  
  	All the diagrams are in the diagram folder.  
 
-<<<<<<< HEAD
-	Diagrams from iteration 1
- 		- ucm-rrq: UCM for read request  
- 		- ucm-wrq: UCM for write request  
-
-	Diagrams for iteration 2
-=======
 	Old diagrams from iteration 1 & 2  
  		- ucm-rrq: UCM for read request  
- 		- ucm-wrq: UCM for write request  
->>>>>>> 0077ce7c4708001b525e4d8d8d080e295f89a667
+ 		- ucm-wrq: UCM for write request
  		- uml: class diagram of this system(updated with new classes)  
 		- fileNotFound-RRQ: timing diagram for file not found during RRQ  
 		- fileNotFound-WRQ: timing diagram for file not found during WRQ  
@@ -144,4 +136,4 @@ Diagrams:
         - rrq-delay-ack: timing diagram for delay ackpacket during RRQ
         - rrq-duplicate-data: timing diagram for duplicate datapacket during RRQ
         - rrq-duplicate-ack: timing diagram for duplicate ack during RRQ
-        - uml: class diagram of this system(updated with new classes)
+        - uml: class diagram of this system(updated with new classes)  
