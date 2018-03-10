@@ -114,6 +114,11 @@ public class TFTPErrorSimulator {
 	private int clientPort; // client port
 	private int serverPort; // request handler port
 	private long delayTime; // the delay time that the user specified
+	private boolean errorSimulated; // if the error has been simulated, this is important
+								    // since if the user choose to delay the data packet
+									// with block number 5, that packet will be received
+									// twice, so if we don't keep this variable, the error
+									// will be simulated twice which is unexpected
 	
 	/**
 	 * Constructor
@@ -218,7 +223,7 @@ public class TFTPErrorSimulator {
 					address, serverPort);
 		TFTPPacket packet = TFTPPacket.createFromPacket(receivePacket);
 		// check if current packet is the packet that we should simulate the error
-		if (packet instanceof TFTPDataPacket && packetType == PacketType.data &&
+		if (!errorSimulated && packet instanceof TFTPDataPacket && packetType == PacketType.data &&
 				((TFTPDataPacket) packet).getBlockNumber() == blockNumber) {
 			if (errorType == ErrorType.lose) {
 				System.out.println("*****Packet is lost*****");
@@ -230,7 +235,8 @@ public class TFTPErrorSimulator {
 				sendReceiveSocket.send(sendPacket);
 				sendReceiveSocket.send(sendPacket);
 			}
-		} else if (packet instanceof TFTPAckPacket && packetType == PacketType.ack &&
+			errorSimulated = true;
+		} else if (!errorSimulated && packet instanceof TFTPAckPacket && packetType == PacketType.ack &&
 				((TFTPAckPacket) packet).getBlockNumber() == blockNumber) {
 			if (errorType == ErrorType.lose) {
 				System.out.println("*****Packet is lost*****");
@@ -242,6 +248,7 @@ public class TFTPErrorSimulator {
 				sendReceiveSocket.send(sendPacket);
 				sendReceiveSocket.send(sendPacket);
 			}
+			errorSimulated = true;
 		} else {
 			sendReceiveSocket.send(sendPacket);
 			System.out.println("Error simulator has sent the packet.");
@@ -257,6 +264,7 @@ public class TFTPErrorSimulator {
 		this.blockNumber = -1;
 		this.packetType = null;
 		this.delayTime = -1;
+		this.errorSimulated = false;
 	}
 
 	/**
