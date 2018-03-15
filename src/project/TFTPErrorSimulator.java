@@ -214,10 +214,17 @@ public class TFTPErrorSimulator {
 		System.out.println("Error simulator is waiting for new requests.");
 
 		try {
-			// received a new request
-			receiveSocket.receive(packet);
-			System.out.println("Error simulator received new requests.");
-
+			// wait forever for the next request packet
+			while (true) {
+				try {
+					// received a new request
+					receiveSocket.receive(packet);
+					System.out.println("Error simulator received new requests.");
+					break;
+				} catch (SocketTimeoutException e) {
+					continue;
+				}
+			}
 			// check if the user wants to simulate the error on TFTP request packet
 			// as a request packet is received
 			if (this.packetType == PacketType.request) {

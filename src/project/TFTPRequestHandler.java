@@ -164,17 +164,6 @@ public class TFTPRequestHandler extends Thread {
 	 * @throws TFTPErrorException 
 	 */
 	private void sendIllegalTFTPOperation(String errorMsg) throws IOException, TFTPErrorException {
-		this.sendIllegalTFTPOperation(errorMsg, address, port);
-	}
-	
-	/**
-	 * Send TFTPErrorPacket with illegal TFTP operation error to the given address and port
-	 * 
-	 * @param errorMsg
-	 * @throws IOException
-	 * @throws TFTPErrorException 
-	 */
-	private void sendIllegalTFTPOperation(String errorMsg, InetAddress address, int port) throws IOException, TFTPErrorException {
 		TFTPErrorPacket errorPacket = TFTPErrorPacket.createIllegalTFTPOperation(errorMsg, address, port);
 		server.printInformation(
 				ThreadLog.formatThreadPrint("Request handler has sent illegal TFTP operation packet back to client."),
@@ -237,10 +226,7 @@ public class TFTPRequestHandler extends Thread {
 		while (true) {
 			try {
 				receivePacket = receivePacket();
-				// if this is the first packet received from server, record its port
-				if (port == -1)
-					port = receivePacket.getPort();
-				else if (port != receivePacket.getPort() ||
+				if (port != receivePacket.getPort() ||
 						!address.equals(receivePacket.getAddress())) {
 					String errorMsg = "This tid is invalid, please use the correct tid!";
 					sendUnknownTid(errorMsg, receivePacket.getAddress(), receivePacket.getPort());
@@ -265,7 +251,7 @@ public class TFTPRequestHandler extends Thread {
 				else
 					throw new TFTPErrorException("Unknown packet received.");
 			} catch (IllegalArgumentException e) {
-				sendIllegalTFTPOperation(e.getMessage(), receivePacket.getAddress(), port);
+				sendIllegalTFTPOperation(e.getMessage());
 			} catch (SocketTimeoutException e) {
 				if (numRetry >= TFTPPacket.MAX_RETRY)
 					throw new TFTPErrorException("Connection lost.");
@@ -293,10 +279,7 @@ public class TFTPRequestHandler extends Thread {
 			try {
 				// receive the data packet and create TFTPPacket from it
 				receivePacket = receivePacket();
-				// if this is the first packet received from server, record its port
-				if (port == -1)
-					port = receivePacket.getPort();
-				else if (port != receivePacket.getPort() ||
+				if (port != receivePacket.getPort() ||
 						!address.equals(receivePacket.getAddress())) {
 					String errorMsg = "This tid is invalid, please use the correct tid!";
 					sendUnknownTid(errorMsg, receivePacket.getAddress(), receivePacket.getPort());
@@ -325,7 +308,7 @@ public class TFTPRequestHandler extends Thread {
 				else
 					throw new TFTPErrorException("Unknown packet received.");
 			} catch (IllegalArgumentException e) {
-				sendIllegalTFTPOperation(e.getMessage(), receivePacket.getAddress(), port);
+				sendIllegalTFTPOperation(e.getMessage());
 			} catch (SocketTimeoutException e) {
 				if (numRetry >= TFTPPacket.MAX_RETRY)
 					throw new TFTPErrorException("Connection lost.");

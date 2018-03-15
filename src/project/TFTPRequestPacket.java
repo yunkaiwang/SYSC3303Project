@@ -135,17 +135,17 @@ public class TFTPRequestPacket extends TFTPPacket {
 
 		int i = 1;
 		StringBuilder filenameBuilder = new StringBuilder();
-		while (packetData[++i] != 0 && i < packetDataLength)
+		while (i < (packetDataLength - 1) && packetData[++i] != 0)
 			filenameBuilder.append((char) packetData[i]);
 		// i = 2 means the third byte is 0, so there is no filename in the packet
 		// i >= packetDataLength means it doesn't find a 0 byte until the last byte,
 		// so filename is not followed by a 0 byte, so there is an error in the packet
-		if (i == 2 || i >= packetDataLength)
+		if (i == 2 || i >= (packetDataLength - 1))
 			throw new IllegalArgumentException("Invalid packet data, include invalid file name");
 		String filename = filenameBuilder.toString();
 
 		StringBuilder modeBuilder = new StringBuilder(); // clean old bytes
-		while (packetData[++i] != 0 && i < packetDataLength)
+		while (i < (packetDataLength - 1) && packetData[++i] != 0)
 			modeBuilder.append((char) packetData[i]);
 
 		// i != packetDataLength means there is more bytes after the final 0 byte, so
