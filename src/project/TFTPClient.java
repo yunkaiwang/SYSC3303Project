@@ -464,6 +464,10 @@ public class TFTPClient {
 						String errorMsg = "Client has received future ack packet with block number: " + AckPacket.getBlockNumber();
 						sendIllegalTFTPOperation(errorMsg, AckPacket.getAddress(), serverResponsePort);
 					}
+					else if(DATAPacket.getFileData().length>DATAPacket.MAX_DATA_LENGTH) {
+						errorMsg = "Request handler has received data packet that exceedes the max length: " + DATAPacket.getFileData().length;
+						sendIllegalTFTPOperation(errorMsg);
+					}
 				} else if (packet instanceof TFTPErrorPacket)
 					throw new TFTPErrorException(((TFTPErrorPacket) packet).getErrorMsg());
 				else
