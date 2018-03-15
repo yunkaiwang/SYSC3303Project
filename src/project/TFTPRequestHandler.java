@@ -321,8 +321,9 @@ public class TFTPRequestHandler extends Thread {
 	 * Handle WRQ
 	 * 
 	 * @throws IOException 
+	 * @throws TFTPErrorException 
 	 */
-	private void readFileFromClient() throws IOException {
+	private void readFileFromClient() throws IOException, TFTPErrorException {
 		String filePath = server.getFilePath(filename); // get full file path
 		
 		File file = null;
@@ -385,11 +386,6 @@ public class TFTPRequestHandler extends Thread {
 						ThreadLog.formatThreadPrint("Request handler has sent the Ack packet."),
 						AckPacket);
 			} while (!DATAPacket.isLastDataPacket());
-		} catch (TFTPErrorException e) {
-			shouldDeleteFile = true;
-			ThreadLog.print("Request handler: Failed to write " + filename + 
-					" from client since following error message:\n" + 
-					e.getMessage());
 		} finally {
 			if (fs != null)
 				fs.close();
