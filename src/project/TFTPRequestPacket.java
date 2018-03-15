@@ -54,26 +54,14 @@ public class TFTPRequestPacket extends TFTPPacket {
 	 * @return byteArray
 	 * @throws IOException
 	 */
-	protected byte[] generateData() throws IOException {
+	protected byte[] getData() throws IOException {
 		ByteArrayOutputStream steam = new ByteArrayOutputStream();
 		steam.write(type().OPCODE());
-		byte[] filenameInByte = filename.getBytes();
-		steam.write(filenameInByte, 0, filenameInByte.length);
+		steam.write(filename.getBytes());
 		steam.write(0);
-		byte[] modeInByte = mode.toLowerCase().getBytes();
-		steam.write(modeInByte, 0, modeInByte.length);
+		steam.write(mode.toLowerCase().getBytes());
 		steam.write(0);
 		return steam.toByteArray();
-	}
-
-	/**
-	 * Getter
-	 * 
-	 * @return dataLength
-	 * @throws IOException
-	 */
-	public int getLength() throws IOException {
-		return generateData().length;
 	}
 
 	/**
@@ -153,7 +141,7 @@ public class TFTPRequestPacket extends TFTPPacket {
 		// i >= packetDataLength means it doesn't find a 0 byte until the last byte,
 		// so filename is not followed by a 0 byte, so there is an error in the packet
 		if (i == 2 || i >= packetDataLength)
-			throw new IllegalArgumentException("Invalid packet data");
+			throw new IllegalArgumentException("Invalid packet data, include invalid file name");
 		String filename = filenameBuilder.toString();
 
 		StringBuilder modeBuilder = new StringBuilder(); // clean old bytes
@@ -162,8 +150,8 @@ public class TFTPRequestPacket extends TFTPPacket {
 
 		// i != packetDataLength means there is more bytes after the final 0 byte, so
 		// the packet format contains an error
-		if (i != packetDataLength)
-			throw new IllegalArgumentException("Invalid packet data");
+		if (i != packetDataLength - 1)
+			throw new IllegalArgumentException("Invalid packet data, more zero bytes after the final 0 byte");
 		
 		// check if given mode is one of the three valid mode
 		String mode = modeBuilder.toString();

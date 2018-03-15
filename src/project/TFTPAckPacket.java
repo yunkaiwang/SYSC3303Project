@@ -116,7 +116,7 @@ public class TFTPAckPacket extends TFTPPacket {
 	 * @throws IOException
 	 */
 	@Override
-	protected byte[] generateData() throws IOException {
+	protected byte[] getData() throws IOException {
 		ByteArrayOutputStream stream = new ByteArrayOutputStream();
 		stream.write(DEFAULT_TYPE.OPCODE());
 		stream.write(blockNumber());

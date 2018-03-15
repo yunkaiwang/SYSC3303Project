@@ -445,7 +445,7 @@ public class TFTPClient {
 				if (serverResponsePort == -1)
 					serverResponsePort = receivePacket.getPort();
 				else if (serverResponsePort != receivePacket.getPort() ||
-						serverAddress != receivePacket.getAddress()) {
+						!serverAddress.equals(receivePacket.getAddress())) {
 					String errorMsg = "This tid is invalid, please use the correct tid!";
 					sendUnknownTid(errorMsg, receivePacket.getAddress(), receivePacket.getPort());
 					continue;
@@ -501,7 +501,7 @@ public class TFTPClient {
 				if (serverResponsePort == -1)
 					serverResponsePort = receivePacket.getPort();
 				else if (serverResponsePort != receivePacket.getPort() ||
-						serverAddress != receivePacket.getAddress()) {
+						!serverAddress.equals(receivePacket.getAddress())) {
 					String errorMsg = "This tid is invalid, please use the correct tid!";
 					sendUnknownTid(errorMsg, receivePacket.getAddress(), receivePacket.getPort());
 					continue;

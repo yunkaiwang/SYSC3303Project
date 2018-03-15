@@ -68,19 +68,19 @@ public abstract class TFTPPacket {
 	 * @return byteArray
 	 * @throws IOException
 	 */
-	protected abstract byte[] generateData() throws IOException;
+	protected abstract byte[] getData() throws IOException;
 
 	/**
-	 * This function simply calls generateData function, implemented so that the
-	 * TFTPRequestPacket instance can be used as same as DatagramPacket.
+	 * Getter the length of bytes contained in the packet
 	 * 
-	 * @return byteArray
+	 * @return dataLength
 	 * @throws IOException
 	 */
-	public byte[] getData() throws IOException {
-		return this.generateData();
+	public int getLength() throws IOException {
+		return getData().length;
 	}
 
+	
 	/**
 	 * Create new TFTPPacket from packet
 	 * 
@@ -135,7 +135,7 @@ public abstract class TFTPPacket {
 	 * @throws IOException
 	 */
 	public DatagramPacket createDatagramPacket() throws IOException {
-		byte[] data = generateData();
+		byte[] data = getData();
 		return new DatagramPacket(data, data.length, address, port);
 	}
 	

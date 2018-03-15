@@ -241,7 +241,7 @@ public class TFTPRequestHandler extends Thread {
 				if (port == -1)
 					port = receivePacket.getPort();
 				else if (port != receivePacket.getPort() ||
-						address != receivePacket.getAddress()) {
+						!address.equals(receivePacket.getAddress())) {
 					String errorMsg = "This tid is invalid, please use the correct tid!";
 					sendUnknownTid(errorMsg, receivePacket.getAddress(), receivePacket.getPort());
 					continue;
@@ -297,7 +297,7 @@ public class TFTPRequestHandler extends Thread {
 				if (port == -1)
 					port = receivePacket.getPort();
 				else if (port != receivePacket.getPort() ||
-						address != receivePacket.getAddress()) {
+						!address.equals(receivePacket.getAddress())) {
 					String errorMsg = "This tid is invalid, please use the correct tid!";
 					sendUnknownTid(errorMsg, receivePacket.getAddress(), receivePacket.getPort());
 					continue;
