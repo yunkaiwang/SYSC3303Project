@@ -87,8 +87,8 @@ public class TFTPDataPacket extends TFTPPacket {
 	 * @param port
 	 * @return TFTPDataPacket
 	 */
-	public static TFTPDataPacket createFromPacketData(byte[] packetData, int packetDataLength, InetAddress address,
-			int port) {
+	public static TFTPDataPacket createFromPacketData(byte[] packetData, int packetDataLength,
+			InetAddress address, int port) {
 		if (!validPacketData(packetData, packetDataLength))
 			throw new IllegalArgumentException("Invalid packet data");
 		int OPCODE = ((packetData[0] << 8) & 0xFF00) | (packetData[1] & 0xFF);

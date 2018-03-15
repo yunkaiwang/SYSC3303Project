@@ -98,7 +98,7 @@ public abstract class TFTPPacket {
 	 * @return DatagramPacket
 	 */
 	public static DatagramPacket createDatagramPacketForReceive() {
-		return new DatagramPacket(new byte[MAX_LENGTH], MAX_LENGTH);
+		return new DatagramPacket(new byte[MAX_LENGTH * 2], MAX_LENGTH * 2);
 	}
 	
 	/**
