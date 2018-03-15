@@ -36,6 +36,7 @@ public class TFTPClient {
 	
 	private InetAddress serverAddress; // server address
 	private int serverPort; // server port
+	private int serverResponsePort; // server response port
 	private String folder = defaultFolder; // current folder directory
 	private TFTPPacket lastPacket; // last packet sent
 	
@@ -60,6 +61,7 @@ public class TFTPClient {
 		this.currentRunningMode = runningMode.normal; // default mode is normal
 		this.serverAddress = server;
 		this.serverPort = port;
+		this.serverResponsePort = -1;
 		
 		try { // create the socket
 			socket = new DatagramSocket();
@@ -365,11 +367,13 @@ public class TFTPClient {
 	 * 
 	 * @param errorMsg
 	 * @throws IOException
+	 * @throws TFTPErrorException 
 	 */
-	private void sendDiskFull(String errorMsg, InetAddress address, int port) throws IOException {
+	private void sendDiskFull(String errorMsg, InetAddress address, int port) throws IOException, TFTPErrorException {
 		print("Client has sent disk full error packet to server.");
 		TFTPErrorPacket errorPacket = TFTPErrorPacket.createDiskfullErrorPacket(errorMsg, address, port);
 		sendPacket(errorPacket);
+		throw new TFTPErrorException(errorMsg); // abort the connection
 	}
 	
 	/**
@@ -381,9 +385,159 @@ public class TFTPClient {
 	 */
 	private void sendIllegalTFTPOperation(String errorMsg, InetAddress address, int port) throws IOException, TFTPErrorException {
 		print("Client has sent illegal TFTP operation packet to server.");
-		TFTPErrorPacket errorPacket = TFTPErrorPacket.createDiskfullErrorPacket(errorMsg, address, port);
+		TFTPErrorPacket errorPacket = TFTPErrorPacket.createIllegalTFTPOperation(errorMsg, address, port);
 		sendPacket(errorPacket);
-		throw new TFTPErrorException(errorMsg);
+		throw new TFTPErrorException(errorMsg); // abort the connection
+	}
+	
+	/**
+	 * Send unknown tid error packet
+	 * 
+	 * @param errorMsg
+	 * @throws IOException
+	 */
+	private void sendUnknownTid(String errorMsg, InetAddress address, int port) throws IOException {
+		print("Client has sent unknown tid error packet to " + addressToString(address, port) + ".");
+		TFTPErrorPacket errorPacket = TFTPErrorPacket.createUnknownTID(errorMsg, address, port);
+		sendPacket(errorPacket);
+	}
+	
+	/**
+	 * re-send the last packet send
+	 * @throws IOException 
+	 */
+	private void resendPacket() throws IOException {
+		print("Last packet might be lost, sending last packet again...");
+		if (lastPacket == null)
+			return;
+		sendPacket(lastPacket);
+	}
+	
+	/**
+	 * Convert an address and port into string for printing
+	 * 
+	 * @param address
+	 * @param port
+	 * @return
+	 */
+	private String addressToString(InetAddress address, int port) {
+		return address.toString() + ":" + port;
+	}
+	
+	/**
+	 * Receive an ack packet with the specified block number
+	 * 
+	 * @param blockNumber
+	 * @return AckPacket
+	 * @throws IOException 
+	 * @throws TFTPErrorException 
+	 */
+	private TFTPAckPacket receiveAck(int blockNumber) throws IOException, TFTPErrorException {
+		// create packets for receiving and validating the packet
+		DatagramPacket receivePacket = null;
+		TFTPPacket packet;
+		TFTPAckPacket AckPacket;
+		int numRetry = 0; // record the number of times we have retried
+		while (true) {
+			try {
+				receivePacket = receivePacket();
+				// if this is the first packet received from server, record its port
+				if (serverResponsePort == -1)
+					serverResponsePort = receivePacket.getPort();
+				else if (serverResponsePort != receivePacket.getPort() ||
+						serverAddress != receivePacket.getAddress()) {
+					String errorMsg = "This tid is invalid, please use the correct tid!";
+					sendUnknownTid(errorMsg, receivePacket.getAddress(), receivePacket.getPort());
+					continue;
+				}
+					
+				packet = TFTPPacket.createFromPacket(receivePacket);
+
+				if (packet instanceof TFTPAckPacket) {
+					AckPacket = (TFTPAckPacket) packet;
+					// received correct ack packet
+					if (AckPacket.getBlockNumber() == blockNumber)
+						return AckPacket;
+					else if (AckPacket.getBlockNumber() < blockNumber)
+						print("Client has received one old ack packet, will ignore it...");
+					else if (AckPacket.getBlockNumber() > blockNumber) { // received future ack packet, this is invalid
+						String errorMsg = "Client has received future ack packet with block number: " + AckPacket.getBlockNumber();
+						sendIllegalTFTPOperation(errorMsg, AckPacket.getAddress(), serverResponsePort);
+					}
+				} else if (packet instanceof TFTPErrorPacket)
+					throw new TFTPErrorException(((TFTPErrorPacket) packet).getErrorMsg());
+				else
+					throw new TFTPErrorException("Unknown packet received.");
+			} catch (IllegalArgumentException e) {
+				sendIllegalTFTPOperation(e.getMessage(), receivePacket.getAddress(), serverResponsePort);
+			} catch (SocketTimeoutException e) {
+				if (numRetry >= TFTPPacket.MAX_RETRY)
+					throw new TFTPErrorException("Connection lost.");
+				resendPacket(); // last packet might be lost, re-send last packet
+				++numRetry;
+			}
+		}
+	}
+	
+	/**
+	 * Receive a data packet with the specified block number
+	 * 
+	 * @param blockNumber
+	 * @return AckPacket
+	 * @throws IOException 
+	 * @throws TFTPErrorException 
+	 */
+	private TFTPDataPacket receiveData(int blockNumber) throws IOException, TFTPErrorException {
+		// create packets for receiving and validating the packet
+		DatagramPacket receivePacket = null;
+		TFTPPacket packet;
+		TFTPDataPacket DATAPacket;
+		int numRetry = 0;
+		while (true) {
+			try {
+				// receive the data packet and create TFTPPacket from it
+				receivePacket = receivePacket();
+				// if this is the first packet received from server, record its port
+				if (serverResponsePort == -1)
+					serverResponsePort = receivePacket.getPort();
+				else if (serverResponsePort != receivePacket.getPort() ||
+						serverAddress != receivePacket.getAddress()) {
+					String errorMsg = "This tid is invalid, please use the correct tid!";
+					sendUnknownTid(errorMsg, receivePacket.getAddress(), receivePacket.getPort());
+					continue;
+				}
+				
+				packet = TFTPPacket.createFromPacket(receivePacket);
+				// if received packet is not TFTPDataPacket, raise an exception
+				if (packet instanceof TFTPDataPacket) {
+					DATAPacket = (TFTPDataPacket) packet;
+					// received correct data packet, continue transfer
+					if (DATAPacket.getBlockNumber() == blockNumber)
+						return DATAPacket;
+					// received old data packet, send the ack packet and
+					// wait for the correct data packet
+					else if (DATAPacket.getBlockNumber() < blockNumber) {
+						print("Client have received one old data packet, sending the ack packet");
+						sendPacket(new TFTPAckPacket(DATAPacket.getBlockNumber(), 
+								DATAPacket.getAddress(), serverResponsePort));
+					} else if (DATAPacket.getBlockNumber() > blockNumber) { // received future data packet, this is invalid
+						String errorMsg = "Client has received future data packet with block number: " + DATAPacket.getBlockNumber();
+						sendIllegalTFTPOperation(errorMsg, DATAPacket.getAddress(), serverResponsePort);
+					}
+				} else if (packet instanceof TFTPErrorPacket)
+					throw new TFTPErrorException(((TFTPErrorPacket) packet).getErrorMsg());
+				else
+					throw new TFTPErrorException("Unknown packet received.");
+			} catch (IllegalArgumentException e) {
+				sendIllegalTFTPOperation(e.getMessage(), receivePacket.getAddress(), serverResponsePort);
+			} catch (SocketTimeoutException e) {
+				if (numRetry >= TFTPPacket.MAX_RETRY)
+					throw new TFTPErrorException("Connection lost.");
+				if (blockNumber == 1) // request packet is lost
+					resendPacket();
+				++numRetry;
+			}
+		}
 	}
 	
 	/**
@@ -392,6 +546,7 @@ public class TFTPClient {
 	 * @param filename
 	 */
 	public void readFileFromServer(String filename) {
+		this.serverResponsePort = -1; // clean response port from old file transfer
 		String filePath = getFilePath(filename);
 		File file = null;
 		FileOutputStream fs = null;
@@ -415,54 +570,15 @@ public class TFTPClient {
 			// form the RRQ packet
 			TFTPRequestPacket RRQPacket = TFTPRequestPacket.createReadRequest(filename, serverAddress, serverPort);
 			sendPacket(RRQPacket); // send the RRQ packet
-			 
-			// print the information
-			printInformation("Client have sent the RRQ.", RRQPacket);
+			printInformation("Client have sent the RRQ.", RRQPacket); // print the information
 
-			DatagramPacket receivePacket = null; // used for record the received packet
-			TFTPPacket packet; // used for receiving packet
 			TFTPAckPacket AckPacket; // used for sending packet
 			TFTPDataPacket DATAPacket; // used for receiving packet
-			int blockNumber = 1, numRetry;
+			int blockNumber = 1;
 			
 			// run until we received the last data packet
 			do {
-				numRetry = 0;
-				while (true) {
-					try {
-						// receive the data packet and create TFTPPacket from it
-						receivePacket = receivePacket();
-						packet = TFTPPacket.createFromPacket(receivePacket);
-						// if received packet is not TFTPDataPacket, raise an exception
-						if (packet instanceof TFTPDataPacket) {
-							DATAPacket = (TFTPDataPacket) packet;
-							// received correct data packet, continue transfer
-							if (DATAPacket.getBlockNumber() == blockNumber)
-								break;
-							// received old data packet, send the ack packet and
-							// wait for the correct data packet
-							else if (DATAPacket.getBlockNumber() < blockNumber) {
-								print("Client have received one old data packet, sending the ack packet");
-								sendPacket(new TFTPAckPacket(DATAPacket.getBlockNumber(), 
-										DATAPacket.getAddress(), DATAPacket.getPort()));
-							} else if (DATAPacket.getBlockNumber() > blockNumber) { // received future data packet, this is invalid
-								String errorMsg = "Client has received future data packet with block number: " + DATAPacket.getBlockNumber();
-								sendIllegalTFTPOperation(errorMsg, DATAPacket.getAddress(), DATAPacket.getPort());
-							}
-						} else if (packet instanceof TFTPErrorPacket)
-							throw new TFTPErrorException(((TFTPErrorPacket) packet).getErrorMsg());
-						else
-							throw new TFTPErrorException("Unknown packet received.");
-					} catch (IllegalArgumentException e) {
-						sendIllegalTFTPOperation(e.getMessage(), receivePacket.getAddress(), receivePacket.getPort());
-					} catch (SocketTimeoutException e) {
-						if (numRetry >= TFTPPacket.MAX_RETRY)
-							throw new TFTPErrorException("Connection lost.");
-						if (blockNumber == 1) // request packet is lost
-							resendPacket();
-						++numRetry;
-					}
-				}
+				DATAPacket = receiveData(blockNumber);
 				
 				// if no exception is thrown, then print the information
 				printInformation("Client have received the data packet.", DATAPacket);
@@ -472,12 +588,11 @@ public class TFTPClient {
 					fs.write(DATAPacket.getFileData()); // write to the file
 				else { // disk is full
 					String errorMsg = "Client don't have enough space to write " + filename + ".";
-					sendDiskFull(errorMsg, DATAPacket.getAddress(), DATAPacket.getPort());
-					throw new TFTPErrorException(errorMsg); // abort the connection
+					sendDiskFull(errorMsg, DATAPacket.getAddress(), serverResponsePort);
 				}
 
 				// form the ack packet
-				AckPacket = new TFTPAckPacket(blockNumber, DATAPacket.getAddress(), DATAPacket.getPort());				
+				AckPacket = new TFTPAckPacket(blockNumber, DATAPacket.getAddress(), serverResponsePort);				
 				sendPacket(AckPacket); // send the ack packet
 				
 				// print the information in the packet
@@ -505,24 +620,14 @@ public class TFTPClient {
 			} catch (IOException e) { }
 		} // end of try-catch
 	} // end of function
-
-	/**
-	 * re-send the last packet send
-	 * @throws IOException 
-	 */
-	private void resendPacket() throws IOException {
-		print("Last packet might be lost, sending last packet again...");
-		if (lastPacket == null)
-			return;
-		sendPacket(lastPacket);
-	}
-
+	
 	/**
 	 * handler WRQ
 	 * 
 	 * @param filename
 	 */
 	public void writeFileToServer(String filename) {
+		this.serverResponsePort = -1; // clean response port from old file transfer
 		String filePath = getFilePath(filename);
 		File file = null;
 		FileInputStream fs = null;
@@ -547,46 +652,14 @@ public class TFTPClient {
 
 			byte[] data = new byte[TFTPDataPacket.MAX_DATA_LENGTH];
 			int byteUsed = 0;
-			int blockNumber = 0, numRetry;
+			int blockNumber = 0;
 			
-			DatagramPacket receivePacket = null; // used for record the packet we received
-			TFTPPacket packet; // used for receiving packet
 			TFTPDataPacket DATAPacket; // used for sending packet
 			TFTPAckPacket AckPacket = null; // for receiving ack packet
 			
 			// run until we have sent all the information
 			do {
-				numRetry = 0;
-				while (true) {
-					try {
-						receivePacket = receivePacket();
-						packet = TFTPPacket.createFromPacket(receivePacket);
-		
-						if (packet instanceof TFTPAckPacket) {
-							AckPacket = (TFTPAckPacket) packet;
-							// received correct ack packet
-							if (AckPacket.getBlockNumber() == blockNumber)
-								break;
-							else if (AckPacket.getBlockNumber() < blockNumber)
-								print("Client has received one old ack packet, will ignore it...");
-							else if (AckPacket.getBlockNumber() > blockNumber) { // received future ack packet, this is invalid
-								String errorMsg = "Client has received future ack packet with block number: " + AckPacket.getBlockNumber();
-								sendIllegalTFTPOperation(errorMsg, AckPacket.getAddress(), AckPacket.getPort());
-							}
-						} else if (packet instanceof TFTPErrorPacket)
-							throw new TFTPErrorException(((TFTPErrorPacket) packet).getErrorMsg());
-						else
-							throw new TFTPErrorException("Unknown packet received.");
-					} catch (IllegalArgumentException e) {
-						sendIllegalTFTPOperation(e.getMessage(), receivePacket.getAddress(), receivePacket.getPort());
-					} catch (SocketTimeoutException e) {
-						if (numRetry >= TFTPPacket.MAX_RETRY)
-							throw new TFTPErrorException("Connection lost.");
-						resendPacket(); // last packet might be lost, re-send last packet
-						++numRetry;
-					}
-				}
-				
+				AckPacket = receiveAck(blockNumber);
 				printInformation("Client have received the ack packet.", AckPacket);
 				++blockNumber;
 				byteUsed = fs.read(data);
@@ -598,35 +671,14 @@ public class TFTPClient {
 					byteUsed = 0;
 					data = new byte[0];
 				}
-
 				// form the data packet that will be sent to the server
 				DATAPacket = new TFTPDataPacket(blockNumber, Arrays.copyOfRange(data, 0, byteUsed),
-						byteUsed, AckPacket.getAddress(), AckPacket.getPort());				
+						byteUsed, AckPacket.getAddress(),serverResponsePort);				
 				sendPacket(DATAPacket); // send the data packet
 				printInformation("Client have sent the data packet.", DATAPacket);
 			} while (byteUsed == TFTPDataPacket.MAX_DATA_LENGTH);
-
-			numRetry = 0;
-			while (true) {
-				try {
-					packet = TFTPPacket.createFromPacket(receivePacket());
-	
-					if (packet instanceof TFTPAckPacket) {
-						AckPacket = (TFTPAckPacket) packet;
-						// received correct ack packet
-						if (AckPacket.getBlockNumber() == blockNumber)
-							break;
-					} else if (packet instanceof TFTPErrorPacket)
-						throw new TFTPErrorException(((TFTPErrorPacket) packet).getErrorMsg());
-					else
-						throw new TFTPErrorException("Unknown packet received.");
-				} catch (SocketTimeoutException e) {
-					if (numRetry >= TFTPPacket.MAX_RETRY)
-						throw new TFTPErrorException("Connection lost.");
-					resendPacket();
-					++numRetry;
-				}
-			}
+			
+			receiveAck(blockNumber);
 			printInformation("Client have received the ack packet.", AckPacket);
 			fs.close();
 		} catch (TFTPErrorException e) {
