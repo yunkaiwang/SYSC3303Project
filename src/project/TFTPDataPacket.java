@@ -16,8 +16,6 @@ public class TFTPDataPacket extends TFTPPacket {
 	private static final Type DEFAULT_TYPE = Type.DATA; // default packet type
 	private static final int HEADER_LENGTH = 4; // packet header length
 	public static final int MAX_DATA_LENGTH = 512; // max data length
-	private static final int MIN_BLOCK_NUMBER = 0; // minimum block number(0)
-	private static final int MAX_BLOCK_NUMBER = 0xffff; // maximum block number(65535)
 	private int blockNumber; // block number of the packet
 	private byte[] fileData; // file data of the packet
 
@@ -39,12 +37,7 @@ public class TFTPDataPacket extends TFTPPacket {
 			throw new IllegalArgumentException("Invalid file data");
 
 		this.blockNumber = blockNumber;
-		if (fileData == null) {
-			this.fileData = new byte[0];
-		} else {
-			this.fileData = new byte[fileDataLength];
-			System.arraycopy(fileData, 0, this.fileData, 0, fileDataLength);
-		}
+		this.fileData = fileData == null ? new byte[0] : fileData;
 	}
 
 	/**
@@ -104,8 +97,8 @@ public class TFTPDataPacket extends TFTPPacket {
 		int blockNumber = ((packetData[2] << 8) & 0xFF00) | (packetData[3] & 0xFF);
 		ByteArrayOutputStream stream = new ByteArrayOutputStream();
 		stream.write(packetData, HEADER_LENGTH, packetDataLength - HEADER_LENGTH);
-		packetData = stream.toByteArray();
-		return new TFTPDataPacket(blockNumber, packetData, packetData.length, address, port);
+		byte[] fileData = stream.toByteArray();
+		return new TFTPDataPacket(blockNumber, fileData, fileData.length, address, port);
 	}
 
 	/**

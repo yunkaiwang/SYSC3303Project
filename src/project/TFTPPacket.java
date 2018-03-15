@@ -16,6 +16,8 @@ public abstract class TFTPPacket {
 	public static final int MAX_RETRY = 5; // maximum retry time
 	public static final int MAX_LENGTH = 516; // max packet data length (complete data packet)
 	public static final int MIN_LENGTH = 4; // min packet data length (ack packet)
+	protected static final int MIN_BLOCK_NUMBER = 0; // minimum block number(0)
+	protected static final int MAX_BLOCK_NUMBER = 0xffff; // maximum block number(65535)
 	private final Type type; // type
 	private InetAddress address; // destination address
 	private int port; // destination port

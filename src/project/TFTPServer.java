@@ -288,25 +288,16 @@ public class TFTPServer {
 			}
 		}
 	}
-
+	
 	/**
-	 * Check if the given packet data is a read request
+	 * Check if the given packet data is a TFTP request packet
 	 * 
 	 * @param data
-	 * @return true is the given packet data is a read request, false otherwise
+	 * @return true is the given packet data is a TFTP request packet, false otherwise
 	 */
-	public boolean isReadRequest(byte[] data) {
-		return data != null && data[0] == 0 && data[1] == 1; // RRQ should have a OPCODE 1
-	}
-
-	/**
-	 * Check if the given packet data is a write request
-	 * 
-	 * @param data
-	 * @return true is the given packet data is a write request, false otherwise
-	 */
-	public boolean isWriteRequest(byte[] data) {
-		return data != null && data[0] == 0 &&data[1] == 2; // RRQ should have a OPCODE 2
+	public boolean isRequestPacket(byte[] data) {
+		// request packet should has OPCODE 1 or 2
+		return data != null && data[0] == 0 && (data[1] == 1 || data[1] == 2);
 	}
 
 	public static void main(String[] args) {

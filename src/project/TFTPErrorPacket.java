@@ -7,17 +7,10 @@ import java.net.InetAddress;
 import java.util.Arrays;
 
 /**
- * TFTPErrorPacket class, for iteration 2, TFTPErrorPacket class is used
- * when the following errors happen
- *  - client send RRQ, but the file not exist on server (fileNotExist)
- *  - client send RRQ, but the client has no permission to read the file (accessViolation)
- *  - client send RRQ, during the file transfer, client's disk become full (diskFull)
- *  - client send WRQ, but the file already exist on server (fileAlreadyExist)
- *  - client send WRQ, but the client has no permission to write to the folder (accessViolation)
- *  - client send WRQ, during the file transfer, server's disk become full (diskFull)
- *  In any of the cases above, a TFTPErrorPacket is sent.
+ * TFTPErrorPacket class, in any of the error cases, an TFTP error packet will
+ * be prepared and sent, and the corresponding connection will be terminated.
  *  
- * @author yunkai wang Last modified on Feb 15, 2018
+ * @author yunkai wang
  */
 public class TFTPErrorPacket extends TFTPPacket {
 	private static final Type DEFAULT_TYPE = Type.ERROR; // default packet type
@@ -118,6 +111,50 @@ public class TFTPErrorPacket extends TFTPPacket {
 	}
 	
 	/**
+	 * Create new illegal operation error packet without defined error message
+	 * 
+	 * @param address
+	 * @param port
+	 * @return TFTPErrorPacket
+	 */
+	public static TFTPErrorPacket createIllegalTFTPOperation(InetAddress address, int port) {
+		return new TFTPErrorPacket(4, address, port);
+	}
+	
+	/**
+	 * Create new illegal operation error packet with defined error message
+	 * 
+	 * @param address
+	 * @param port
+	 * @return TFTPErrorPacket
+	 */
+	public static TFTPErrorPacket createIllegalTFTPOperation(String msg, InetAddress address, int port) {
+		return new TFTPErrorPacket(4, msg, address, port);
+	}
+	
+	/**
+	 * Create new unknown transfer id packet without defined error message
+	 * 
+	 * @param address
+	 * @param port
+	 * @return TFTPErrorPacket
+	 */
+	public static TFTPErrorPacket createUnknownTID(InetAddress address, int port) {
+		return new TFTPErrorPacket(5, address, port);
+	}
+	
+	/**
+	 * Create new unknown transfer id packet with defined error message
+	 * 
+	 * @param address
+	 * @param port
+	 * @return TFTPErrorPacket
+	 */
+	public static TFTPErrorPacket createUnknownTID(String msg, InetAddress address, int port) {
+		return new TFTPErrorPacket(5, msg, address, port);
+	}
+	
+	/**
 	 * Create new file already exists error packet without defined error message
 	 * 
 	 * @param address
@@ -138,7 +175,7 @@ public class TFTPErrorPacket extends TFTPPacket {
 	public static TFTPErrorPacket createFileAlreadyExistErrorPacket(String msg, InetAddress address, int port) {
 		return new TFTPErrorPacket(6, msg, address, port);
 	}
-
+	
 	/**
 	 * Getter
 	 * 

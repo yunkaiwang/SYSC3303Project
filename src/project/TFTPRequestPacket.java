@@ -142,24 +142,39 @@ public class TFTPRequestPacket extends TFTPPacket {
 			int port) {
 		// verify op code
 		int OPCODE = ((packetData[0] << 8) & 0xFF00) | (packetData[1] & 0xFF);
-		if (!(OPCODE == 1 || OPCODE == 2)) {
+		if (!(OPCODE == 1 || OPCODE == 2))
 			throw new IllegalArgumentException("Invalid OP code");
-		}
 
 		int i = 1;
 		StringBuilder filenameBuilder = new StringBuilder();
-		while (packetData[++i] != 0 && i < packetDataLength) {
+		while (packetData[++i] != 0 && i < packetDataLength)
 			filenameBuilder.append((char) packetData[i]);
-		}
+		// i = 2 means the third byte is 0, so there is no filename in the packet
+		// i >= packetDataLength means it doesn't find a 0 byte until the last byte,
+		// so filename is not followed by a 0 byte, so there is an error in the packet
+		if (i == 2 || i >= packetDataLength)
+			throw new IllegalArgumentException("Invalid packet data");
 		String filename = filenameBuilder.toString();
 
+		StringBuilder modeBuilder = new StringBuilder(); // clean old bytes
+		while (packetData[++i] != 0 && i < packetDataLength)
+			modeBuilder.append((char) packetData[i]);
+
+		String mode = modeBuilder.toString();
+		if (mode != "netascii" && mode != "octet")
+			throw new IllegalArgumentException("Invalid mode in request packet");
+		
+		// i != packetDataLength means there is more bytes after the final 0 byte, so
+		// the packet format contains an error
+		if (i != packetDataLength)
+			throw new IllegalArgumentException("Invalid packet data");
+		
 		switch (OPCODE) {
 		case (1):
 			return createReadRequest(filename, address, port);
-		case (2):
+		default: // OPCODE can only be 1 or 2 as it has been checked
 			return createWriteRequest(filename, address, port);
 		}
-		return null;
 	}
 	
 	/**
