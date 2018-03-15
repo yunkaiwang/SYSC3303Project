@@ -160,14 +160,15 @@ public class TFTPRequestPacket extends TFTPPacket {
 		while (packetData[++i] != 0 && i < packetDataLength)
 			modeBuilder.append((char) packetData[i]);
 
-		String mode = modeBuilder.toString();
-		if (mode != "netascii" && mode != "octet")
-			throw new IllegalArgumentException("Invalid mode in request packet");
-		
 		// i != packetDataLength means there is more bytes after the final 0 byte, so
 		// the packet format contains an error
 		if (i != packetDataLength)
 			throw new IllegalArgumentException("Invalid packet data");
+		
+		// check if given mode is one of the three valid mode
+		String mode = modeBuilder.toString();
+		if (!(mode.equalsIgnoreCase("netascii") || mode.equalsIgnoreCase("octet")|| mode.equalsIgnoreCase("mail")))
+			throw new IllegalArgumentException("Invalid mode in request packet");
 		
 		switch (OPCODE) {
 		case (1):
