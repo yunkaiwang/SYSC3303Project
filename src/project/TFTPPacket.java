@@ -16,6 +16,8 @@ public abstract class TFTPPacket {
 	public static final int MAX_RETRY = 5; // maximum retry time
 	public static final int MAX_LENGTH = 516; // max packet data length (complete data packet)
 	public static final int MIN_LENGTH = 4; // min packet data length (ack packet)
+	protected static final int MIN_BLOCK_NUMBER = 0; // minimum block number(0)
+	protected static final int MAX_BLOCK_NUMBER = 0xffff; // maximum block number(65535)
 	private final Type type; // type
 	private InetAddress address; // destination address
 	private int port; // destination port
@@ -66,19 +68,19 @@ public abstract class TFTPPacket {
 	 * @return byteArray
 	 * @throws IOException
 	 */
-	protected abstract byte[] generateData() throws IOException;
+	protected abstract byte[] getData() throws IOException;
 
 	/**
-	 * This function simply calls generateData function, implemented so that the
-	 * TFTPRequestPacket instance can be used as same as DatagramPacket.
+	 * Getter the length of bytes contained in the packet
 	 * 
-	 * @return byteArray
+	 * @return dataLength
 	 * @throws IOException
 	 */
-	public byte[] getData() throws IOException {
-		return this.generateData();
+	public int getLength() throws IOException {
+		return getData().length;
 	}
 
+	
 	/**
 	 * Create new TFTPPacket from packet
 	 * 
@@ -96,7 +98,7 @@ public abstract class TFTPPacket {
 	 * @return DatagramPacket
 	 */
 	public static DatagramPacket createDatagramPacketForReceive() {
-		return new DatagramPacket(new byte[MAX_LENGTH], MAX_LENGTH);
+		return new DatagramPacket(new byte[MAX_LENGTH * 2], MAX_LENGTH * 2);
 	}
 	
 	/**
@@ -133,7 +135,7 @@ public abstract class TFTPPacket {
 	 * @throws IOException
 	 */
 	public DatagramPacket createDatagramPacket() throws IOException {
-		byte[] data = generateData();
+		byte[] data = getData();
 		return new DatagramPacket(data, data.length, address, port);
 	}
 	

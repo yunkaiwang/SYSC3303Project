@@ -54,26 +54,14 @@ public class TFTPRequestPacket extends TFTPPacket {
 	 * @return byteArray
 	 * @throws IOException
 	 */
-	protected byte[] generateData() throws IOException {
+	protected byte[] getData() throws IOException {
 		ByteArrayOutputStream steam = new ByteArrayOutputStream();
 		steam.write(type().OPCODE());
-		byte[] filenameInByte = filename.getBytes();
-		steam.write(filenameInByte, 0, filenameInByte.length);
+		steam.write(filename.getBytes());
 		steam.write(0);
-		byte[] modeInByte = mode.toLowerCase().getBytes();
-		steam.write(modeInByte, 0, modeInByte.length);
+		steam.write(mode.toLowerCase().getBytes());
 		steam.write(0);
 		return steam.toByteArray();
-	}
-
-	/**
-	 * Getter
-	 * 
-	 * @return dataLength
-	 * @throws IOException
-	 */
-	public int getLength() throws IOException {
-		return generateData().length;
 	}
 
 	/**
@@ -142,24 +130,40 @@ public class TFTPRequestPacket extends TFTPPacket {
 			int port) {
 		// verify op code
 		int OPCODE = ((packetData[0] << 8) & 0xFF00) | (packetData[1] & 0xFF);
-		if (!(OPCODE == 1 || OPCODE == 2)) {
+		if (!(OPCODE == 1 || OPCODE == 2))
 			throw new IllegalArgumentException("Invalid OP code");
-		}
 
 		int i = 1;
 		StringBuilder filenameBuilder = new StringBuilder();
-		while (packetData[++i] != 0 && i < packetDataLength) {
+		while (i < (packetDataLength - 1) && packetData[++i] != 0)
 			filenameBuilder.append((char) packetData[i]);
-		}
+		// i = 2 means the third byte is 0, so there is no filename in the packet
+		// i >= packetDataLength means it doesn't find a 0 byte until the last byte,
+		// so filename is not followed by a 0 byte, so there is an error in the packet
+		if (i == 2 || i >= (packetDataLength - 1))
+			throw new IllegalArgumentException("Invalid packet data, include invalid file name");
 		String filename = filenameBuilder.toString();
 
+		StringBuilder modeBuilder = new StringBuilder(); // clean old bytes
+		while (i < (packetDataLength - 1) && packetData[++i] != 0)
+			modeBuilder.append((char) packetData[i]);
+
+		// i != packetDataLength means there is more bytes after the final 0 byte, so
+		// the packet format contains an error
+		if (i != packetDataLength - 1)
+			throw new IllegalArgumentException("Invalid packet data, more zero bytes after the final 0 byte");
+		
+		// check if given mode is one of the three valid mode
+		String mode = modeBuilder.toString();
+		if (!(mode.equalsIgnoreCase("netascii") || mode.equalsIgnoreCase("octet")|| mode.equalsIgnoreCase("mail")))
+			throw new IllegalArgumentException("Invalid mode in request packet");
+		
 		switch (OPCODE) {
 		case (1):
 			return createReadRequest(filename, address, port);
-		case (2):
+		default: // OPCODE can only be 1 or 2 as it has been checked
 			return createWriteRequest(filename, address, port);
 		}
-		return null;
 	}
 	
 	/**

@@ -60,11 +60,17 @@ public class TFTPRequestListener extends Thread {
 			// create new packet for receiving new requests
 			DatagramPacket packet = TFTPPacket.createDatagramPacketForReceive();
 			try {
-				// a new packet is received
 				socket.receive(packet);
-				// only handle RRQ or WRQ at this moment, ignore all other requests received
-				if (server.isReadRequest(packet.getData()) || server.isWriteRequest(packet.getData())) {
+				// request listener is only responsible to create new request handler
+				// to handler new request packet
+				if (server.isRequestPacket(packet.getData()))
 					server.createNewRequestHandler(packet, packet.getAddress(), packet.getPort()).start();
+				// if any packets other than request packet is received, send illegalTFTPOperation error packet
+				else {
+					String errMsg = "Request listener has received an packet with invalid OPCODE";
+					TFTPPacket errorPacket = TFTPErrorPacket.createIllegalTFTPOperation(errMsg, packet.getAddress(), packet.getPort());
+					socket.send(errorPacket.createDatagramPacket());
+					ThreadLog.print(errMsg);
 				}
 			} catch(IOException e) {
 				// IOException raised when the socket is closed while waiting

@@ -14,9 +14,7 @@ import java.util.Arrays;
  */
 public class TFTPAckPacket extends TFTPPacket {
 	private static final Type DEFAULT_TYPE = Type.ACK; // default packet type
-	public static final int PACKET_LENGTH = 4; // length of a Ack packet
-	private static final int MIN_BLOCK_NUMBER = 0; // minimum block number(0)
-	private static final int MAX_BLOCK_NUMBER = 0xffff; // maximum block number(65535)
+	private static final int PACKET_LENGTH = 4; // length of a Ack packet
 	private int blockNumber; // block number of the packet
 
 	/**
@@ -118,7 +116,7 @@ public class TFTPAckPacket extends TFTPPacket {
 	 * @throws IOException
 	 */
 	@Override
-	protected byte[] generateData() throws IOException {
+	protected byte[] getData() throws IOException {
 		ByteArrayOutputStream stream = new ByteArrayOutputStream();
 		stream.write(DEFAULT_TYPE.OPCODE());
 		stream.write(blockNumber());

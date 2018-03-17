@@ -1,9 +1,11 @@
 package project;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
+import java.util.Random;
 import java.util.Scanner;
 
 /**
@@ -84,15 +86,17 @@ public class TFTPServer {
 	 */
 	private static void printMenu() {
 		System.out.println("Available commands:\n"
-	            + "  menu          - show the menu\n"
-				+ "  exit          - stop the client\n"
-	            + "  mode          - show current mode\n"
-				+ "  switch        - switch mode\n"
-	            + "  count         - number of threads that are running\n"
-				+ "  dir/pwd       - current directory\n"
-	            + "  la/ls         - list of files under current directory\n"
-	  		    + "  rm <filename> - remove existing file\n"
-				+ "  cd <folder>   - change directory, new directoly location should be written using /(i.e. ../new_client/)\n");
+	            + "  menu             - show the menu\n"
+				+ "  exit             - stop the client\n"
+	            + "  mode             - show current mode\n"
+				+ "  switch           - switch mode\n"
+	            + "  count            - number of threads that are running\n"
+				+ "  dir/pwd          - current directory\n"
+	            + "  la/ls            - list of files under current directory\n"
+	  		    + "  rm <filename>    - remove existing file\n"
+				+ "  cd <folder>      - change directory, new directoly location should be written using /(i.e. ../new_client/)\n"
+		        + "  touch <fn>       - create a new empty file for testing with the given file name(i.e. touch random.txt)\n"
+		        + "  touch <fn> <size>- create a new file for testing with the given file name and the given size(i.e. touch random.txt 512)\n");
 	}
 
 	/**
@@ -159,6 +163,33 @@ public class TFTPServer {
 		System.out.println("Current number of threads is: " + getNumThread());
 	}
 
+	/**
+	 * create new file with given file name and file size
+	 */
+	private void createFile(String filename, int fileSize) {
+		File file;
+		FileOutputStream fs;
+		try {
+			file = new File(getFilePath(filename));
+			if (file.exists()) {
+				System.out.println(filename + " already exists, please choose a new file name");
+				return;
+			} else if (!file.exists()) { // file not exist, we need to create the file
+				if (!file.createNewFile()) // failed to create the file
+					throw new IOException("Failed to create " + filename);
+			}
+			fs = new FileOutputStream(file);
+			Random rand = new Random();
+			// write random bytes to the file
+			for (int i = 0; i < fileSize; ++i)
+				fs.write(rand.nextInt(fileSize) + 1);
+			fs.close();
+		} catch (IOException e) {
+			// if an error happens, delete the file
+			removeFile(filename);
+		}
+	}
+	
 	/**
 	 * Switch the directory to a new path
 	 * 
@@ -281,6 +312,19 @@ public class TFTPServer {
 			case "rm":
 				this.removeFile(commands[1]);
 				continue;
+			case "touch": // create file
+				if (commands.length != 2 && commands.length != 3)
+					System.out.println("Please enter a valid file name and file size(e.g. touch random.txt 512)");
+				else {
+					try {
+						String fileName = commands[1];
+						int fileSize = commands.length == 3 ? Integer.parseInt(commands[2]) : 0;
+						createFile(fileName, fileSize);
+					} catch (Exception e) { // parse failed, given file size is invalid
+						System.out.println("Please enter a valid file name and file size(e.g. touch random.txt 512)");
+					}
+				}
+				continue;
 			default:
 				System.out.println("Invalid command, please try again!\n");
 				System.out.println("These are the available commands:");
@@ -288,25 +332,16 @@ public class TFTPServer {
 			}
 		}
 	}
-
+	
 	/**
-	 * Check if the given packet data is a read request
+	 * Check if the given packet data is a TFTP request packet
 	 * 
 	 * @param data
-	 * @return true is the given packet data is a read request, false otherwise
+	 * @return true is the given packet data is a TFTP request packet, false otherwise
 	 */
-	public boolean isReadRequest(byte[] data) {
-		return data != null && data[0] == 0 && data[1] == 1; // RRQ should have a OPCODE 1
-	}
-
-	/**
-	 * Check if the given packet data is a write request
-	 * 
-	 * @param data
-	 * @return true is the given packet data is a write request, false otherwise
-	 */
-	public boolean isWriteRequest(byte[] data) {
-		return data != null && data[0] == 0 &&data[1] == 2; // RRQ should have a OPCODE 2
+	public boolean isRequestPacket(byte[] data) {
+		// request packet should has OPCODE 1 or 2
+		return data != null && data[0] == 0 && (data[1] == 1 || data[1] == 2);
 	}
 
 	public static void main(String[] args) {
