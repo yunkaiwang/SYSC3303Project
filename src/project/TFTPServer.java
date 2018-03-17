@@ -171,7 +171,7 @@ public class TFTPServer {
 		FileOutputStream fs;
 		try {
 			file = new File(getFilePath(filename));
-			if (file.exists() || !file.canWrite()) {
+			if (file.exists()) {
 				System.out.println(filename + " already exists, please choose a new file name");
 				return;
 			} else if (!file.exists()) { // file not exist, we need to create the file

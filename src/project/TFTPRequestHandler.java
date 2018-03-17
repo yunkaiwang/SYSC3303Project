@@ -63,6 +63,7 @@ public class TFTPRequestHandler extends Thread {
 	 * Handler the request based on the packet data
 	 */
 	private void handleRequest() {
+		boolean shouldDeleteFile = false;
 		try {
 			TFTPPacket requestPacket = null;
 			try {
@@ -71,7 +72,7 @@ public class TFTPRequestHandler extends Thread {
 				sendIllegalTFTPOperation(e.getMessage());
 			}
 			if (!(requestPacket instanceof TFTPRequestPacket))
-				throw new IllegalArgumentException("Request handler is handling unknown packet");
+				throw new TFTPErrorException("Request handler is handling unknown packet");
 			if (((TFTPRequestPacket) requestPacket).isReadRequest()) { // RRQ
 				server.printInformation(ThreadLog.formatThreadPrint("Request handler has received the RRQ."), 
 						requestPacket);
@@ -82,11 +83,16 @@ public class TFTPRequestHandler extends Thread {
 				readFileFromClient();
 			}
 		} catch (TFTPErrorException e) {
-			ThreadLog.print("Request handler: Failed to send " + filename + 
-					" to client since the following error message:\n" +
+			ThreadLog.print("Request handler: Failed to transfer " + filename + 
+					" with client since the following error message:\n" +
 					e.getMessage());
+			shouldDeleteFile = true;
 		} catch (IOException e) {
 			ThreadLog.print("Request handler failed to send the request. Please try again.\n");
+			shouldDeleteFile = true;
+		} finally {
+			if (shouldDeleteFile)
+				new File(server.getFilePath(filename)).delete();
 		}
 	}
 
