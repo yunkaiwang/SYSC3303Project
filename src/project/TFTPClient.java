@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Random;
 
 /**
  * TFTPClient
@@ -150,6 +151,8 @@ public class TFTPClient {
 		  "  rm <filename>    - remove existing file\n" +
 		  "  pwd/dir          - current directory\n" +
 		  "  cd <folder>      - change directory, new directoly location should be written using /(i.e. ../new_client/)\n" +
+		  "  touch <fn>       - create a new empty file for testing with the given file name(i.e. touch random.txt)\n" +
+		  "  touch <fn> <size>- create a new file for testing with the given file name and the given size(i.e. touch random.txt 512)\n" +
 		  "  read <filename>  - send RRQ(i.e. read text.txt)\n" + 
 		  "  write <filename> - send WRQ(i.e. write text.txt)\n");
 	}
@@ -234,6 +237,33 @@ public class TFTPClient {
 	}
 
 	/**
+	 * create new file with given file name and file size
+	 */
+	private void createFile(String filename, int fileSize) {
+		File file;
+		FileOutputStream fs;
+		try {
+			file = new File(getFilePath(filename));
+			if (file.exists() || !file.canWrite()) {
+				print(filename + " already exists, please choose a new file name");
+				return;
+			} else if (!file.exists()) { // file not exist, we need to create the file
+				if (!file.createNewFile()) // failed to create the file
+					throw new IOException("Failed to create " + filename);
+			}
+			fs = new FileOutputStream(file);
+			Random rand = new Random();
+			// write random bytes to the file
+			for (int i = 0; i < fileSize; ++i)
+				fs.write(rand.nextInt(fileSize) + 1);
+			fs.close();
+		} catch (IOException e) {
+			// if an error happens, delete the file
+			removeFile(filename);
+		}
+	}
+	
+	/**
 	 * Main loop of this file, wait for new requests
 	 */
 	private void waitForCommand() {
@@ -278,6 +308,19 @@ public class TFTPClient {
 			case "reset": // switch current test mode
 				switchRunningMode();
 				printRunningMode();
+				continue;
+			case "touch": // create file
+				if (commands.length != 2 && commands.length != 3)
+					print("Please enter a valid file name and file size(e.g. touch random.txt 512)");
+				else {
+					try {
+						String fileName = commands[1];
+						int fileSize = commands.length == 3 ? Integer.parseInt(commands[2]) : 0;
+						createFile(fileName, fileSize);
+					} catch (Exception e) { // parse failed, given file size is invalid
+						print("Please enter a valid file name and file size(e.g. touch random.txt 512)");
+					}
+				}
 				continue;
 			case "read": // send RRQ
 				if (commands.length != 2)

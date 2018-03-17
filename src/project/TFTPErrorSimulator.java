@@ -538,9 +538,14 @@ public class TFTPErrorSimulator {
 					   commands.equalsIgnoreCase("tid")) {
 				String[] splitCommand = commands.split(" ");
 				if (splitCommand[0].equalsIgnoreCase("delay")) {
-					if (splitCommand.length == 2)
-						this.delayTime = Long.parseLong(commands.split(" ")[1]);
-					else {
+					if (splitCommand.length == 2) {
+						try {
+							this.delayTime = Long.parseLong(commands.split(" ")[1]);
+						} catch (Exception e) { // parse failed
+							System.out.println("Please enter a valid delay time");
+							continue;
+						}
+					} else {
 						System.out.println("Please enter a valid delay time");
 						continue;
 					}
