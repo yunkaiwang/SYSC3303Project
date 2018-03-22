@@ -386,10 +386,24 @@ public class TFTPClient {
 	 * @throws IOException
 	 */
 	private void sendPacket(TFTPPacket packet) throws IOException {
-		lastPacket = packet;
-		socket.send(packet.createDatagramPacket());
+		sendPacket(packet, false);
 	}
 
+	/**
+	 * Send packet
+	 * 
+	 * @param packet
+	 * @param recordForResend
+	 * @throws IOException
+	 */
+	private void sendPacket(TFTPPacket packet, boolean recordForResend) throws IOException {
+		if (recordForResend)
+			lastPacket = packet;
+		else
+			lastPacket = null;
+		socket.send(packet.createDatagramPacket());
+	}
+	
 	/**
 	 * Receive datagram packet
 	 * 
@@ -453,7 +467,7 @@ public class TFTPClient {
 		print("Last packet might be lost, sending last packet again...");
 		if (lastPacket == null)
 			return;
-		sendPacket(lastPacket);
+		sendPacket(lastPacket, true);
 	}
 	
 	/**
@@ -612,7 +626,7 @@ public class TFTPClient {
 
 			// form the RRQ packet
 			TFTPRequestPacket RRQPacket = TFTPRequestPacket.createReadRequest(filename, serverAddress, serverPort);
-			sendPacket(RRQPacket); // send the RRQ packet
+			sendPacket(RRQPacket, true); // send the RRQ packet
 			printInformation("Client have sent the RRQ.", RRQPacket); // print the information
 
 			TFTPAckPacket AckPacket; // used for sending packet
@@ -690,7 +704,7 @@ public class TFTPClient {
 
 			// form the WRQ packet
 			TFTPRequestPacket WRQPacket = TFTPRequestPacket.createWriteRequest(filename, serverAddress, serverPort);
-			sendPacket(WRQPacket); // send the WRQ packet
+			sendPacket(WRQPacket, true); // send the WRQ packet
 			printInformation("Client have sent the WRQ.", WRQPacket);
 
 			byte[] data = new byte[TFTPDataPacket.MAX_DATA_LENGTH];
@@ -717,7 +731,7 @@ public class TFTPClient {
 				// form the data packet that will be sent to the server
 				DATAPacket = new TFTPDataPacket(blockNumber, Arrays.copyOfRange(data, 0, byteUsed),
 						byteUsed, AckPacket.getAddress(),serverResponsePort);				
-				sendPacket(DATAPacket); // send the data packet
+				sendPacket(DATAPacket, true); // send the data packet
 				printInformation("Client have sent the data packet.", DATAPacket);
 			} while (byteUsed == TFTPDataPacket.MAX_DATA_LENGTH);
 			
