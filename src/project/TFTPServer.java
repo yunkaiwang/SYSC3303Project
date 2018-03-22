@@ -343,6 +343,17 @@ public class TFTPServer {
 		// request packet should has OPCODE 1 or 2
 		return data != null && data[0] == 0 && (data[1] == 1 || data[1] == 2);
 	}
+	
+	/**
+	 * Check if the given packet data is a TFTP request packet
+	 * 
+	 * @param data
+	 * @return true is the given packet data is a TFTP request packet, false otherwise
+	 */
+	public boolean isWriteRequest(byte[] data) {
+		// request packet should has OPCODE 1 or 2
+		return data != null && data[0] == 0 && data[1] == 2;
+	}
 
 	public static void main(String[] args) {
 		TFTPServer server = new TFTPServer();

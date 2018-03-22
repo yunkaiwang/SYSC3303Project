@@ -220,35 +220,48 @@ public class TFTPErrorSimulator {
 					// received a new request
 					receiveSocket.receive(packet);
 					System.out.println("Error simulator received new requests.");
-					break;
+					
+					// forward the request to the well-known request listener port 69
+					address = packet.getAddress();
+					clientPort = packet.getPort();
+					// forward the request packet to server
+					DatagramPacket sendPacket = new DatagramPacket(packet.getData(), packet.getLength(),
+										address, TFTPServer.TFTP_LISTEN_PORT);
+					
+					// check if the user wants to simulate the error on TFTP request packet
+					// as a request packet is received
+					if (!errorSimulated && this.packetType == PacketType.request) {
+						// for iteration 3, duplicate or delay TFTP request packet will not be handled,
+						// so even if you specify duplicate a TFTP request packet, the error will
+						// not be simulated
+						if (this.errorType == ErrorType.lose) { // lose request packet
+							System.out.println("*****Lose packet*****");
+							continue;
+						} else if (this.errorType == ErrorType.delay) {
+							System.out.println("*****Packet is delayed*****");
+							new Thread(new DelayThread(sendReceiveSocket, sendPacket, delayTime), "Delay thread").start();
+							if (delayTime >= 2000)
+								continue;
+						} else if (this.errorType == ErrorType.duplicate) {
+							System.out.println("*****Packet is duplicated*****");
+							sendReceiveSocket.send(sendPacket);
+							sendReceiveSocket.send(sendPacket);
+						} else if (this.errorType == ErrorType.corrupt) {
+							System.out.println("*****Packet is corrupted*****");
+							sendPacket = corruptPacket(sendPacket);
+							sendReceiveSocket.send(sendPacket);
+						}
+						errorSimulated = true;
+						break;
+					} else {
+						sendReceiveSocket.send(sendPacket);
+						break;
+					}
 				} catch (SocketTimeoutException e) {
 					continue;
 				}
 			}
-			// check if the user wants to simulate the error on TFTP request packet
-			// as a request packet is received
-			if (this.packetType == PacketType.request) {
-				// for iteration 3, duplicate or delay TFTP request packet will not be handled,
-				// so even if you specify duplicate a TFTP request packet, the error will
-				// not be simulated
-				if (this.errorType == ErrorType.lose) { // lose request packet
-					System.out.println("*****Lose packet*****");
-
-					// prepare to receive a new request packet
-					packet = TFTPPacket.createDatagramPacketForReceive(); // create new datagram packet for receiving
-					receiveSocket.receive(packet); // receive new request packet from client
-					System.out.println("Error simulator received request packet again.");
-				} else if (this.errorType == ErrorType.corrupt)
-					packet = corruptPacket(packet);
-			}
-			// forward the request to the well-known request listener port 23
-			address = packet.getAddress();
-			clientPort = packet.getPort();
-			// forward the request packet to server
-			DatagramPacket sendPacket = new DatagramPacket(packet.getData(), packet.getLength(),
-					address, TFTPServer.TFTP_LISTEN_PORT);
-			sendReceiveSocket.send(sendPacket);
-			System.out.println("Error simulator has forward the packet to the server.");
+			// handle the file transfer
 			while (true)
 				receiveAndSend();
 		} catch (SocketTimeoutException e) {
@@ -343,21 +356,21 @@ public class TFTPErrorSimulator {
 	private void receiveAndSend() throws IOException, SocketTimeoutException {
 		DatagramPacket receivePacket, sendPacket;
 		receivePacket = TFTPPacket.createDatagramPacketForReceive(); // create new datagram packet for receiving
-		sendReceiveSocket.receive(receivePacket); // receive new request packet from client
+		sendReceiveSocket.receive(receivePacket); // receive new packet
 		System.out.println("Error simulator has received the packet.");
 
 		// remember the server port if the server port is still unknown
 		if (serverPort == -1)
 			serverPort = receivePacket.getPort();
 		
-		// if the request is from server, then we send it to client
-		if (receivePacket.getPort() == serverPort)
-			sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(),
-					address, clientPort);
-		// if the request if from client, then we send it to server
-		else
+		// if the request is from client, we send it to server
+		if (receivePacket.getPort() == clientPort)
 			sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(),
 					address, serverPort);
+		// if the request if from server, we send it to client
+		else
+			sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(),
+					address, clientPort);
 		TFTPPacket packet = TFTPPacket.createFromPacket(receivePacket);
 		// check if current packet is the packet that we should simulate the error
 		if (!errorSimulated && packet instanceof TFTPDataPacket && packetType == PacketType.data &&
