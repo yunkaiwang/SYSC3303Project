@@ -134,8 +134,10 @@ Diagrams:
         - rrq-delay-data: timing diagram for delay datapacket during RRQ  
         - rrq-delay-ack: timing diagram for delay ackpacket during RRQ  
         - rrq-duplicate-data: timing diagram for duplicate datapacket during RRQ  
-        - rrq-duplicate-ack: timing diagram for duplicate ack during RRQ  
-        Diagrams from iteration 4
+        - rrq-duplicate-ack: timing diagram for duplicate ack during RRQ
+        
+        Diagrams from iteration 4 (./diagrams/iteration4)
+        - uml: uml diagram for the system
         - wrq-request-4: timing diagram for write request illegal error code 4
         - wrq-data-4: timing diagram for datapacket illegal durinig WRQ error code 4
         - wrq-ack-4: timing diagram for ack packet illegal during WRQ error code 4
