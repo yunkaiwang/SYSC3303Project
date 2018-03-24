@@ -119,7 +119,6 @@ Diagrams:
 		- accessViolation-WRQ: timing diagram for access violation during WRQ  
 		- diskFull-RRQ: timing diagram for disk full during RRQ  
 		- diskFull-WRQ: timing diagram for disk full during WRQ  
-		- fileAlreadyExists - timing diagram for file already exists (only happends during WRQ)  
 
         Diagrams from iteration 3  
         - wrq-lost-data: timing diagram for lost datapacket during WRQ  
@@ -135,5 +134,18 @@ Diagrams:
         - rrq-delay-data: timing diagram for delay datapacket during RRQ  
         - rrq-delay-ack: timing diagram for delay ackpacket during RRQ  
         - rrq-duplicate-data: timing diagram for duplicate datapacket during RRQ  
-        - rrq-duplicate-ack: timing diagram for duplicate ack during RRQ  
-        - uml: class diagram of this system(updated with new classes)  
+        - rrq-duplicate-ack: timing diagram for duplicate ack during RRQ
+        
+        Diagrams from iteration 4 (./diagrams/iteration4)
+        - uml: uml diagram for the system
+        - wrq-request-4: timing diagram for write request illegal error code 4
+        - wrq-data-4: timing diagram for datapacket illegal durinig WRQ error code 4
+        - wrq-ack-4: timing diagram for ack packet illegal during WRQ error code 4
+        - rrq-request-4: timing diagram for read request illegal error code 4
+        - rrq-data-4: timing diagram for datapacket illegal durinig RRQ error code 4
+        - rrq-ack-4: timing diagram for ack packet illegal during RRQ error code 4
+        - wrq-data-5: timing diagram for unknown transfer id for datapacket durinig WRQ error code 5
+        - wrq-ack-5: timing diagram for unknown transfer id for ackpacket durinig WRQ error code 5
+        - rrq-data-5: timing diagram for unknown transfer id for datapacket durinig RRQ error code 5
+        - rrq-ack-5: timing diagram for unknown transfer id for ackpacket durinig RRQ error code 5
+        
