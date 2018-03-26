@@ -12,7 +12,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Random;
 
 /**
  * TFTPClient
@@ -20,7 +19,7 @@ import java.util.Random;
  * @author yunkai wang
  *
  */
-public class TFTPClient {
+public class TFTPClient extends TFTPHost {
 	// as required by the project, the client may run in two modes,
 	// in test mode, the error simulator program will get involved,
 	// in normal mode, the requests will be directly sent to the server
@@ -28,17 +27,15 @@ public class TFTPClient {
 		test, normal;
 	}
 
-	private static final String defaultFolder = System.getProperty("user.dir") + File.separator
+	private static final String DEFAULT_FOLDER = System.getProperty("user.dir") + File.separator
 			+ "client_files" + File.separator; // default folder directory
 	
 	DatagramSocket socket; // socket used for sending and receiving
-	private Mode currentMode; // verbose or quite, in verbose mode, all information will get printed
 	private runningMode currentRunningMode; // test or normal, as described above
 	
 	private InetAddress serverAddress; // server address
 	private int serverPort; // server port
 	private int serverResponsePort; // server response port
-	private String folder = defaultFolder; // current folder directory
 	private TFTPPacket lastPacket; // last packet sent
 	
 	
@@ -49,7 +46,7 @@ public class TFTPClient {
 	 * @throws SocketException 
 	 */
 	TFTPClient() throws UnknownHostException, SocketException {
-		this.currentMode = Mode.QUITE; //default mode is quite
+		super(DEFAULT_FOLDER, Mode.QUITE); //default mode is quite
 		this.currentRunningMode = runningMode.normal; // default mode is normal
 		this.serverAddress = InetAddress.getLocalHost(); // default server address is localhost
 		this.serverPort = TFTPServer.TFTP_LISTEN_PORT; // default server port is 69
@@ -71,24 +68,6 @@ public class TFTPClient {
 		case normal:
 			currentRunningMode = runningMode.test;
 			serverPort = TFTPErrorSimulator.TFTP_LISTEN_PORT; // send requests to error simulator
-			return;
-		}
-	}
-
-	/**
-	 * Print information in the packet
-	 * 
-	 * @param info
-	 * @param packet
-	 * @throws IOException
-	 */
-	private void printInformation(String info, TFTPPacket packet) throws IOException {
-		print(info);
-		switch (this.currentMode) {
-		case QUITE: // don't print detailed information in QUITE mode
-			return;
-		case VERBOSE:
-			print(packet);
 			return;
 		}
 	}
@@ -126,13 +105,6 @@ public class TFTPClient {
 	}
 
 	/**
-	 * Print current printing mode(verbose/quite)
-	 */
-	private void printMode() {
-		print("Current mode is: " + currentMode.mode());
-	}
-
-	/**
 	 * Print current running mode(test/normal)
 	 */
 	private void printRunningMode() {
@@ -140,94 +112,10 @@ public class TFTPClient {
 	}
 
 	/**
-	 * Switch the printing mode(verbose/quite)
-	 */
-	private void switchMode() {
-		this.currentMode = currentMode.switchMode();
-		print("The mode has been switched to " + this.currentMode + "\n");
-	}
-
-	/**
 	 * Terminate the client
 	 */
 	private void stopClient() {
 		print("Terminating client.");
-	}
-
-	/**
-	 * Print current directory
-	 */
-	private void printDirectory() {
-		print("Current directory is: " + this.getFolder() + "\n");
-	}
-
-	/**
-	 * Switch the directory to a new path
-	 * 
-	 * @param newDirectoryPath
-	 */
-	private void switchDirectory(String newDirectoryPath) {
-		String prevFolder = this.getFolder(); // previous directory path. used for restoring directory path
-		String[] directoryPath = newDirectoryPath.split("/");
-		for (String dir : directoryPath) {
-			if (dir.length() == 0)
-				continue;
-			else if (dir.equals("..")) {
-				if (this.folder.indexOf(File.separator) != -1) {
-					this.setFolder(this.folder.substring(0,
-							this.folder.substring(0, this.folder.length() - 1).lastIndexOf(File.separator))
-							+ File.separator);
-				} else {
-					print("New directory path is invalid, please try again.\n");
-					this.setFolder(prevFolder); // restore directory path
-				}
-			} else {
-				this.setFolder(this.getFolder() + dir + File.separator);
-				File path = new File(this.folder);
-				if (!path.exists()) {
-					print("New directory path is invalid, please try again.\n");
-					this.setFolder(prevFolder); // restore directory path
-				}
-			}
-		}
-	}
-
-	/**
-	 * Print all files under current directory
-	 */
-	private void printListFiles() {
-		File folder = new File(this.getFolder());
-		File[] listOfFiles = folder.listFiles();
-
-		for (File file : listOfFiles)
-			print(file.getName());
-	}
-
-	/**
-	 * create new file with given file name and file size
-	 */
-	private void createFile(String filename, int fileSize) {
-		File file;
-		FileOutputStream fs;
-		try {
-			file = new File(getFilePath(filename));
-			if (file.exists()) {
-				print(filename + " already exists, please choose a new file name");
-				return;
-			} else if (!file.exists()) { // file not exist, we need to create the file
-				if (!file.createNewFile()) // failed to create the file
-					throw new IOException("Failed to create " + filename);
-			}
-			fs = new FileOutputStream(file);
-			Random rand = new Random();
-			// write random bytes to the file
-			for (int i = 0; i < fileSize; ++i)
-				fs.write(rand.nextInt(fileSize) + 1);
-			fs.close();
-		} catch (IOException e) {
-			// if an error happens, delete the file
-			removeFile(filename);
-		}
 	}
 	
 	/**
@@ -342,43 +230,6 @@ public class TFTPClient {
 	}
 
 	/**
-	 * remove a given file from client folder
-	 * 
-	 * @param filename
-	 */
-	private void removeFile(String filename) {
-		new File(getFilePath(filename)).delete();
-	}
-
-	/**
-	 * Setter
-	 * 
-	 * @return folder
-	 */
-	private void setFolder(String newFolder) {
-		this.folder = newFolder;
-	}
-
-	/**
-	 * Getter
-	 * 
-	 * @return folder
-	 */
-	private String getFolder() {
-		return folder;
-	}
-
-	/**
-	 * Create the file path by combining the folder location and filename
-	 * 
-	 * @param filename
-	 * @return filePath
-	 */
-	private String getFilePath(String filename) {
-		return getFolder() + filename;
-	}
-
-	/**
 	 * Send packet
 	 * 
 	 * @param packet
@@ -467,17 +318,6 @@ public class TFTPClient {
 		if (lastPacket == null)
 			return;
 		sendPacket(lastPacket, true);
-	}
-	
-	/**
-	 * Convert an address and port into string for printing
-	 * 
-	 * @param address
-	 * @param port
-	 * @return
-	 */
-	private String addressToString(InetAddress address, int port) {
-		return address.toString() + ":" + port;
 	}
 	
 	/**
