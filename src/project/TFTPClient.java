@@ -46,30 +46,16 @@ public class TFTPClient {
 	 * Constructor
 	 * 
 	 * @throws UnknownHostException
+	 * @throws SocketException 
 	 */
-	TFTPClient() throws UnknownHostException {
-		this(InetAddress.getLocalHost(), TFTPServer.TFTP_LISTEN_PORT);
-	}
-
-	/**
-	 * Constructor
-	 * 
-	 * @param server
-	 * @param port
-	 */
-	TFTPClient(InetAddress server, int port) {
+	TFTPClient() throws UnknownHostException, SocketException {
 		this.currentMode = Mode.QUITE; //default mode is quite
 		this.currentRunningMode = runningMode.normal; // default mode is normal
-		this.serverAddress = server;
-		this.serverPort = port;
+		this.serverAddress = InetAddress.getLocalHost(); // default server address is localhost
+		this.serverPort = TFTPServer.TFTP_LISTEN_PORT; // default server port is 69
 		this.serverResponsePort = -1;
-		
-		try { // create the socket
-			socket = new DatagramSocket();
-			socket.setSoTimeout(TFTPPacket.TIMEOUT);
-		} catch (SocketException e) {
-			System.exit(0); // failed to create socket, exit
-		}
+		this.socket = new DatagramSocket();
+		this.socket.setSoTimeout(TFTPPacket.TIMEOUT);
 	}
 
 	/**
@@ -109,32 +95,11 @@ public class TFTPClient {
 
 	/**
 	 * Helper method for printing message
-	 * These print methods are included so that we don't have
-	 * to type System.out.println every time, instead, we can
-	 * simply use print(), and these three versions of print
-	 * functions are included so that the print function can
-	 * by used as same as System.out.println.
-	 * 
-	 * @param msg
-	 */
-	private static void print(String msg) {
-		System.out.println(msg);
-	}
-	
-	/**
-	 * Helper method for printing object
 	 * 
 	 * @param o
 	 */
 	private static void print(Object o) {
-		print(o.toString());
-	}
-	
-	/**
-	 * Helper method for printing newline
-	 */
-	private static void print() {
-		print("");
+		System.out.println(o.toString());
 	}
 	
 	/**
@@ -154,7 +119,10 @@ public class TFTPClient {
 		  "  touch <fn>       - create a new empty file for testing with the given file name(i.e. touch random.txt)\n" +
 		  "  touch <fn> <size>- create a new file for testing with the given file name and the given size(i.e. touch random.txt 512)\n" +
 		  "  read <filename>  - send RRQ(i.e. read text.txt)\n" + 
-		  "  write <filename> - send WRQ(i.e. write text.txt)\n");
+		  "  write <filename> - send WRQ(i.e. write text.txt)\n" +
+		  "  ip               - print current server ip and port\n" +
+          "  connect <ip>        - change server ip to the given address\n" +
+		  "  connect <ip>:<port> - change server ip and port to the given address and port\n");
 	}
 
 	/**
@@ -233,7 +201,6 @@ public class TFTPClient {
 
 		for (File file : listOfFiles)
 			print(file.getName());
-		print();
 	}
 
 	/**
@@ -292,6 +259,12 @@ public class TFTPClient {
 			case "ls":
 				printListFiles();
 				continue;
+			case "ip":
+				printServerIP();
+				continue;
+			case "connect":
+				setServerIP(commands[1]);
+				continue;
 			case "rm": // print list of files
 				removeFile(commands[1]);
 				continue;
@@ -339,6 +312,32 @@ public class TFTPClient {
 			default: // invalid request
 				print("Invalid command, please try again!\n");
 			}
+		}
+	}
+
+	/**
+	 * Print current server ip address
+	 */
+	private void printServerIP() {
+		print("Current server ip is : " + addressToString(this.serverAddress, this.serverPort));
+	}
+	
+	/**
+	 * Set server ip address to the given new address
+	 * 
+	 * @param newAddress
+	 */
+	private void setServerIP(String newAddress) {
+		try {
+			String[] newAddressComponents = newAddress.split(":");
+			if (newAddressComponents.length == 2)
+				this.serverPort = Integer.parseInt(newAddressComponents[1]);
+			if (newAddressComponents[0].equalsIgnoreCase("localhost"))
+				this.serverAddress = InetAddress.getLocalHost();
+			else
+				this.serverAddress = InetAddress.getByName(newAddress);
+		} catch (Exception e) {
+			print("Failed to change server ip to " + newAddress + ". Please try again.");
 		}
 	}
 
@@ -753,7 +752,10 @@ public class TFTPClient {
 	} // end of function
 
 	public static void main(String[] args) throws UnknownHostException {
-		TFTPClient client = new TFTPClient();
-		client.waitForCommand();
+		try {
+			new TFTPClient().waitForCommand();
+		} catch (Exception e) {
+			System.exit(0);
+		}
 	}
 }

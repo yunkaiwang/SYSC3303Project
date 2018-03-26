@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Scanner;
 
@@ -167,8 +166,9 @@ public class TFTPErrorSimulator {
 	private ErrorType errorType; // current simulating error
 	private PacketType packetType; // current simulating tftp error packet
 	private int blockNumber; // the block number of the packet to raise an error
-	private InetAddress address; // address to send
+	private InetAddress clientAddress; // address to send
 	private int clientPort; // client port
+	private InetAddress serverAddress; // request handler address
 	private int serverPort; // request handler port
 	private long delayTime; // the delay time that the user specified
 	private boolean errorSimulated; // if the error has been simulated, this is important
@@ -187,8 +187,9 @@ public class TFTPErrorSimulator {
 			receiveSocket = new DatagramSocket(TFTP_LISTEN_PORT);
 			sendReceiveSocket = new DatagramSocket();
 			sendReceiveSocket.setSoTimeout(10000); // wait for 10 seconds
-		} catch (SocketException se) { // Can't create the socket.
-			se.printStackTrace();
+			serverAddress = InetAddress.getLocalHost(); // default server address is localhost
+		} catch (Exception e) {
+			e.printStackTrace();
 			System.exit(1);
 		}
 	}
@@ -221,12 +222,11 @@ public class TFTPErrorSimulator {
 					receiveSocket.receive(packet);
 					System.out.println("Error simulator received new requests.");
 					
-					// forward the request to the well-known request listener port 69
-					address = packet.getAddress();
+					clientAddress = packet.getAddress();
 					clientPort = packet.getPort();
 					// forward the request packet to server
 					DatagramPacket sendPacket = new DatagramPacket(packet.getData(), packet.getLength(),
-										address, TFTPServer.TFTP_LISTEN_PORT);
+										serverAddress, TFTPServer.TFTP_LISTEN_PORT);
 					
 					// check if the user wants to simulate the error on TFTP request packet
 					// as a request packet is received
@@ -366,11 +366,11 @@ public class TFTPErrorSimulator {
 		// if the request is from client, we send it to server
 		if (receivePacket.getPort() == clientPort)
 			sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(),
-					address, serverPort);
+					serverAddress, serverPort);
 		// if the request if from server, we send it to client
 		else
 			sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(),
-					address, clientPort);
+					clientAddress, clientPort);
 		TFTPPacket packet = TFTPPacket.createFromPacket(receivePacket);
 		// check if current packet is the packet that we should simulate the error
 		if (!errorSimulated && packet instanceof TFTPDataPacket && packetType == PacketType.data &&
@@ -445,9 +445,34 @@ public class TFTPErrorSimulator {
 				+ "  duplicate    - duplicate a packet\n"
 				+ "  corrupt      - corrupt the packet\n"
 				+ "  tid          - create an unknown tid\n"
-				+ "  exit         - exit the error simulator\n");
+				+ "  exit         - exit the error simulator\n"
+				+ "  ip           - print current server ip\n"
+		        + "  connect <ip> - change server ip to the given address(i.e., connect localhost)\n");
 	}
-
+	
+	/**
+	 * Print current server ip address
+	 */
+	private void printServerIP() {
+		System.out.println("Current server ip is : " + this.serverAddress.toString());
+	}
+	
+	/**
+	 * Set server ip address to the given new address
+	 * 
+	 * @param newAddress
+	 */
+	private void setServerIP(String newAddress) {
+		try {
+			if (newAddress.equalsIgnoreCase("localhost"))
+				this.serverAddress = InetAddress.getLocalHost();
+			else
+				this.serverAddress = InetAddress.getByName(newAddress);
+		} catch (Exception e) {
+			System.out.println("Failed to change server ip to " + newAddress + ". Please try again.");
+		}
+	}
+	
 	/**
 	 * Choose type of corruption
 	 * 
@@ -572,6 +597,12 @@ public class TFTPErrorSimulator {
 			} else if (commands.equalsIgnoreCase("exit")) {
 				s.close();
 				return;
+			} else if (commands.equalsIgnoreCase("ip")) {
+				printServerIP();
+				continue;
+			} else if (commands.split(" ")[0].equalsIgnoreCase("connect")) {
+				setServerIP(commands.split(" ")[1]);
+				continue;
 			} else {
 				System.out.println("Invalid command, please try again!\n");
 				System.out.println("These are the available commands:");

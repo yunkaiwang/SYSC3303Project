@@ -356,7 +356,6 @@ public class TFTPServer {
 	}
 
 	public static void main(String[] args) {
-		TFTPServer server = new TFTPServer();
-		server.waitForCommand();
+		new TFTPServer().waitForCommand();
 	}
 }
