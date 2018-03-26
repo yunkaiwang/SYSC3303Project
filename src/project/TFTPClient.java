@@ -223,8 +223,9 @@ public class TFTPClient extends TFTPHost {
 			if (newAddressComponents[0].equalsIgnoreCase("localhost"))
 				this.serverAddress = InetAddress.getLocalHost();
 			else
-				this.serverAddress = InetAddress.getByName(newAddress);
+				this.serverAddress = InetAddress.getByName(newAddressComponents[0]);
 		} catch (Exception e) {
+			print(e.getMessage());
 			print("Failed to change server ip to " + newAddress + ". Please try again.");
 		}
 	}
