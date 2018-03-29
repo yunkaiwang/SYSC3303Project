@@ -359,14 +359,14 @@ public class TFTPClient extends TFTPHost {
 						print("Client has received one old ack packet, will ignore it...");
 					else if (AckPacket.getBlockNumber() > blockNumber) { // received future ack packet, this is invalid
 						String errorMsg = "Client has received future ack packet with block number: " + AckPacket.getBlockNumber();
-						sendIllegalTFTPOperation(errorMsg, AckPacket.getAddress(), serverResponsePort);
+						sendIllegalTFTPOperation(errorMsg, serverAddress, serverResponsePort);
 					}
 				} else if (packet instanceof TFTPErrorPacket)
 					throw new TFTPErrorException(((TFTPErrorPacket) packet).getErrorMsg());
 				else
 					throw new TFTPErrorException("Unknown packet received.");
 			} catch (IllegalArgumentException e) {
-				sendIllegalTFTPOperation(e.getMessage(), receivePacket.getAddress(), serverResponsePort);
+				sendIllegalTFTPOperation(e.getMessage(), serverAddress, serverResponsePort);
 			} catch (SocketTimeoutException e) {
 				if (numRetry >= TFTPPacket.MAX_RETRY)
 					throw new TFTPErrorException("Connection lost.");
@@ -416,17 +416,17 @@ public class TFTPClient extends TFTPHost {
 					else if (DATAPacket.getBlockNumber() < blockNumber) {
 						print("Client have received one old data packet, sending the ack packet");
 						sendPacket(new TFTPAckPacket(DATAPacket.getBlockNumber(), 
-								DATAPacket.getAddress(), serverResponsePort));
+								serverAddress, serverResponsePort));
 					} else if (DATAPacket.getBlockNumber() > blockNumber) { // received future data packet, this is invalid
 						String errorMsg = "Client has received future data packet with block number: " + DATAPacket.getBlockNumber();
-						sendIllegalTFTPOperation(errorMsg, DATAPacket.getAddress(), serverResponsePort);
+						sendIllegalTFTPOperation(errorMsg, serverAddress, serverResponsePort);
 					}
 				} else if (packet instanceof TFTPErrorPacket)
 					throw new TFTPErrorException(((TFTPErrorPacket) packet).getErrorMsg());
 				else
 					throw new TFTPErrorException("Unknown packet received.");
 			} catch (IllegalArgumentException e) {
-				sendIllegalTFTPOperation(e.getMessage(), receivePacket.getAddress(), serverResponsePort);
+				sendIllegalTFTPOperation(e.getMessage(), serverAddress, serverResponsePort);
 			} catch (SocketTimeoutException e) {
 				if (numRetry >= TFTPPacket.MAX_RETRY)
 					throw new TFTPErrorException("Connection lost.");
@@ -485,11 +485,11 @@ public class TFTPClient extends TFTPHost {
 					fs.write(DATAPacket.getFileData()); // write to the file
 				else { // disk is full
 					String errorMsg = "Client don't have enough space to write " + filename + ".";
-					sendDiskFull(errorMsg, DATAPacket.getAddress(), serverResponsePort);
+					sendDiskFull(errorMsg, serverAddress, serverResponsePort);
 				}
 
 				// form the ack packet
-				AckPacket = new TFTPAckPacket(blockNumber, DATAPacket.getAddress(), serverResponsePort);				
+				AckPacket = new TFTPAckPacket(blockNumber, serverAddress, serverResponsePort);				
 				sendPacket(AckPacket); // send the ack packet
 				
 				// print the information in the packet
@@ -570,7 +570,7 @@ public class TFTPClient extends TFTPHost {
 				}
 				// form the data packet that will be sent to the server
 				DATAPacket = new TFTPDataPacket(blockNumber, Arrays.copyOfRange(data, 0, byteUsed),
-						byteUsed, AckPacket.getAddress(),serverResponsePort);				
+						byteUsed, serverAddress,serverResponsePort);				
 				sendPacket(DATAPacket, true); // send the data packet
 				printInformation("Client have sent the data packet.", DATAPacket);
 			} while (byteUsed == TFTPDataPacket.MAX_DATA_LENGTH);
