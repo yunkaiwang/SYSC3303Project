@@ -116,8 +116,6 @@ public class TFTPRequestHandler extends Thread {
 	private void sendPacket(TFTPPacket packet, boolean recordForResend) throws IOException {
 		if (recordForResend)
 			lastPacket = packet;
-		else
-			lastPacket = null;
 		socket.send(packet.createDatagramPacket());
 	}
 
