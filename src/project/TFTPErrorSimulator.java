@@ -234,6 +234,7 @@ public class TFTPErrorSimulator {
 						// for iteration 3, duplicate or delay TFTP request packet will not be handled,
 						// so even if you specify duplicate a TFTP request packet, the error will
 						// not be simulated
+						errorSimulated = true;
 						if (this.errorType == ErrorType.lose) { // lose request packet
 							System.out.println("*****Lose packet*****");
 							continue;
@@ -251,7 +252,6 @@ public class TFTPErrorSimulator {
 							sendPacket = corruptPacket(sendPacket);
 							sendReceiveSocket.send(sendPacket);
 						}
-						errorSimulated = true;
 						break;
 					} else {
 						sendReceiveSocket.send(sendPacket);
